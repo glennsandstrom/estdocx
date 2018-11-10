@@ -1,0 +1,15 @@
+v 1.0
+* lines starting with * are comments; they are ignored
+* blank lines are ignored, too
+* v indicates version—specify v 3, which is the current version of .toc files
+* d lines display description text
+* the first d line is the title, and the remaining ones are text
+* blank d lines display a blank line
+d 'estimates_table_docx': Altough the command putdocx in Stata 15 provide a native implementation for exporting estimates
+d trough the command docx table results = etable.
+d However, using etable directly after etstimates store causes unwanted formatting issues in the resulting table. E.g. hidden characters in cells
+d making formating of the table in MSWord difficult. This implemtation avoid such issues and allowes some
+d additonal benefits by providing options for the formating of the resulting table, automatic inclusion of
+d legend etc.
+* p lines display packages
+p estimates_table_docx

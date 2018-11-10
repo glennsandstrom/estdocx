@@ -2,11 +2,11 @@
 title[a command giving same fucntionality as estimates table but exports results directly to a Wordtable]
 
 desc[
- {cmd:estimates_table_docx} Although it is possible o do this directly with the command 
- putdocx Stata 15 native implementation using putdocx table results = etable causes 
- unwanted formatting issues in the resulting table such as e.g. hidden characters in cells
- making formating of the table difficult. This implemtation avoid such issues and allowes some
- additonal benefits by providing options for the formating of the reuslting table and inclusion of
+ {cmd:estimates_table_docx} The command putdocx in Stata 15 provide a 
+ native implementation for exporting estimates trough the command docx table results = etable.
+ However, suing etable directly after etstimates store causes unwanted formatting issues in the resulting table. E.g. hidden characters in cells
+ making formating of the table in MSWord difficult. This implemtation avoid such issues and allowes some
+ additonal benefits by providing options for the formating of the resulting table, automatic inclusion of
  legend etc.
 ]
 opt[saving() path/filemane of the output.docx file]
