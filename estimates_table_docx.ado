@@ -190,7 +190,7 @@ program estimates_table_docx
 	version 15.1
   
 	syntax namelist(min=1),	///
-		saving(string) ///
+		[saving(string)] ///
 		[title(string)] ///
 		[bdec(real .01)] ///
 		[star(string)] ///
@@ -202,6 +202,7 @@ program estimates_table_docx
 	
 	// defualt significanse values if none are provided
 	if ("`star'"=="") local star ".05 .01 .001"
+	if ("`saving'"=="") local saving "estimates_table.docx"
 	/**************************************************************************/
 	/** CREATE TABLE                     **/
 	/**************************************************************************/
