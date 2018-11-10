@@ -1,22 +1,16 @@
 {smcl}
-{* *! version 1.0  9 Nov 2018}{...}
-{vieweralsosee "" "--"}{...}
-{vieweralsosee "Install command2" "ssc install command2"}{...}
-{vieweralsosee "Help command2 (if installed)" "help command2"}{...}
-{viewerjumpto "Syntax" "estimates_table_docx##syntax"}{...}
-{viewerjumpto "Description" "estimates_table_docx##description"}{...}
-{viewerjumpto "Options" "estimates_table_docx##options"}{...}
-{viewerjumpto "Remarks" "estimates_table_docx##remarks"}{...}
-{viewerjumpto "Examples" "estimates_table_docx##examples"}{...}
+{* *! version 1.0 20181110 }{...}
+
 {title:Title}
 {phang}
-{bf:estimates_table_docx} {hline 2} a command giving same fucntionality as estimates table but exports results directly to a Wordtable
+{bf:estimates_table_docx} {hline 2} a command giving same fucntionality as estimates table 
+but exports results directly to a Wordtable
 
 {marker syntax}{...}
 {title:Syntax}
 {p 8 17 2}
 {cmdab:estimates_table_docx}
-namelist(name=models)
+namelist
 [{cmd:,}
 {it:options}]
 
@@ -24,8 +18,12 @@ namelist(name=models)
 {synopthdr}
 {synoptline}
 {syntab:Main}
-{synopt:{opt title(string)}}  {p_end}
-
+{synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
+{synopt:{opt title(string)}} Optional title for table.{p_end}
+{synopt:{opt bdec(real)}}Number of decimal places used for paramaters. Default is .01{p_end}
+{synopt:{opt star(numlist)}}Numlist of significanse levels. Default is .05 .01 .001.{p_end}
+{synopt:{opt baselevels}}Include all baselevels.{p_end}
+{synopt:{opt landscape}}Use landscape layout for worddocument.{p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}
@@ -35,44 +33,75 @@ namelist(name=models)
 {pstd}
 
 {pstd}
- {cmd:estimates_table_docx} Although it is possible o do this directly with the command 
- putdocx Stata 15 native implementation using putdocx table results = etable causes 
+ {cmd:estimates_table_docx} Takes a namlist of stored estiamtes and exports this to a publication
+ quality table in MS Word. Although it is possible to export estimates to a table 
+ using the command putdocx Stata 15 (i.e. putdocx table results = etable) This method causes 
  unwanted formatting issues in the resulting table such as e.g. hidden characters in cells
- making formating of the table difficult. This implemtation avoid such issues and allowes some
- additonal benefits by providing options for the formating of the reuslting table and inclusion of
- legend etc.
+ making it difficult to choose alignment in the cells and the need to erase these characters.
+ estimates_table_docx avoid such issues and allowes some additonal benefits by providing 
+ options for the formating of the reuslting table and inclusion of legend etc.
 
 {marker options}{...}
 {title:Options}
 {dlgtab:Main}
+
 {phang}
-{opt title(string)}    
+{opt saving(string)}Path/filename of the generated docx file.
+
+{phang}
+{opt title(string)} Optional title for table.
+
+{phang}
+{opt bdec(real .01)} Number of decimal places used for paramaters. Default is .01
+
+{phang}
+{opt star(numlist .05 .01 .001)} significanse levels.
+
+{phang}
+{opt baselevels} Include all baselevels in the resulting table.
+
+{phang}
+{opt landscape} Include all baselevels in the table.
+
 {marker examples}{...}
 {title:Examples}
-{pstd}
 
-{pstd}
+    {hline}
+    Setup
+{phang2}{cmd:. sysuse nlsw88, clear}{p_end}
 
-{pstd}
- 	{stata estimation command }
-	{stata estimates store m1 }
-	{stata estimation command }
-	{stata estimates store tenure }
-	{stata estimates_to_docx base grade tenure, saving("test.docx") star(.05 .01 .001) title("Table 1: Title") bdec(.001) }
-	
+{pstd}Run estimation command{p_end}
+{phang2}{cmd:. logistic never_married c.age i.race i.collgrad c.wage}
 
-{pstd}
+{pstd}Store model using estimates{p_end}
+{phang2}{cmd:. estimates store base}
 
-{pstd}
+{pstd}Run second model{p_end}
+{phang2}{cmd:. logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)}
 
+{pstd}Store second model using estimates{p_end}
+{phang2}{cmd:. estimates store grade}
+
+{pstd}Run command to produce table in Word document estimates_table.docx{p_end}
+{phang2}{cmd:. estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels}
+
+
+    {hline}
+    Setup
+{phang2}{cmd:. sysuse auto, clear}{p_end}
+{phang2}{cmd:. tabulate rep78}{p_end}
+{phang2}{cmd:. tabulate foreign}{p_end}
+
+{pstd}Shorthand for above two commands{p_end}
+{phang2}{cmd:. tab1 rep78 foreign}{p_end}
+    {hline}
 
 {title:Author}
 {p}
 
-Dr Glenn Sandström, CEDAR Centre for Demographic and Ageing Research, University of Umeå.
-
-Email {browse "mailto:glenn.sandstrom@umu.se":glenn.sandstrom@umu.se}
-
+Dr Glenn Sandström, Umeå Univerity, Sweden.
+Email: {browse "mailto:glenn.sandstrom@umu.se":glenn.sandstrom@umu.se}
+Web:{browse "http://www.idesam.umu.se/english/about/staff/?uid=glsa0001"}
 
 
 {title:See Also}

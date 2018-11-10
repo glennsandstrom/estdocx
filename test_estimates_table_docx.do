@@ -100,10 +100,10 @@ assert round(A[rownumb(A,"_cons") ,colnumb(A,"base")],.0000001)== .7183583
 
 
 //run entire program for models base and grade
-estimates_table_docx base grade tenure, saving("test.docx") star(.05 .01 .001) ///
+estimates_table_docx base grade tenure, star(.05 .01 .001) ///
 bdec(.001) title("Table 1: Test title") baselevels
 
-winexec $wordpath "test.docx"
+winexec $wordpath "estimates_table.docx"
 
 estimates table base grade tenure, star(.05 .01 .001) b(%7.2f) stfmt(%7.1f) ///
 stats(N) varwidth(30) eform 
