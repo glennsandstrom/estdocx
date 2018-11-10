@@ -1,51 +1,9 @@
-/* START HELP FILE
-title[a command giving same fucntionality as estimates table but exports results directly to a Wordtable]
 
-desc[
- {cmd:estimates_table_docx} The command putdocx in Stata 15 provide a 
- native implementation for exporting estimates trough the command docx table results = etable.
- However, suing etable directly after etstimates store causes unwanted formatting issues in the resulting table. E.g. hidden characters in cells
- making formating of the table in MSWord difficult. This implemtation avoid such issues and allowes some
- additonal benefits by providing options for the formating of the resulting table, automatic inclusion of
- legend etc.
-]
-opt[saving() path/filemane of the output.docx file]
-opt[test() path/filemane of the output.docx file]
-opt[lc the string argument is a {help colorstyle}list, specifies the colors for the observations (not axes).]
-opt[lp the string argument is a {help linepatternstyle}list and specifies the patterns for the observations (no
-opt[radial specifies a variable to be plotted as spikes along the spokes of the plot.]
-opt[* additional {help twoway_options} can be specified. ]
-opt2[rlabel specifies the ticks and labels of the spokes. The default is to have 5 values displayed, note that
-the value that is the centre or smallest tick is suppressed but the value is included as a note below the
-graph. The note can be overwritten by using the {hi: note()} option.
-]
-
-example[
-
- 	{stata estimation command }
-	{stata estimates store m1 }
-	{stata estimation command }
-	{stata estimates store tenure }
-	{stata estimates_to_docx base grade tenure, saving("test.docx") star(.05 .01 .001) title("Table 1: Title") bdec(.001) }
-	
-]
-
-author[Dr Glenn Sandström]
-institute[CEDAR Centre for Demographic and Ageing Research, University of Umeå]
-email[glenn.sandstrom@umu.se]
-
-return[n2 The second stage sample size]
-
-freetext[]
-
-seealso[]
-
-END HELP FILE */
 /**************************************************************************/
 /**SUB-ROUTINES  **/
 /**************************************************************************/
 	/*########################################################################*/
-	capture program drop create_docx
+	//capture program drop create_docx
 	program create_docx
 		version 15.1
 		syntax namelist(name=models), [title(string)] [landscape]
@@ -91,7 +49,7 @@ END HELP FILE */
 			}
 	end
 	/*########################################################################*/
-	capture program drop get_models
+	//capture program drop get_models
 	program get_models, rclass
 	version 15.1
 	  
@@ -130,7 +88,7 @@ END HELP FILE */
 			return matrix model_p= model_p
 	end
 	/*########################################################################*/
-	capture program drop write_continious
+	//capture program drop write_continious
 	program write_continious
 		version 15.1
 		syntax namelist(min=1), ///
@@ -162,7 +120,7 @@ END HELP FILE */
 			
 	end
 	/*########################################################################*/	
-	capture program drop write_level
+	//capture program drop write_level
 	program write_level
 		version 15.1
 		syntax namelist(min=1), ///
@@ -199,7 +157,7 @@ END HELP FILE */
 		}	
 	end
 	/*########################################################################*/	
-	capture program drop write_legend
+	//capture program drop write_legend
 	program write_legend
 		version 15.1
 		syntax, star(string) row(integer) col(integer)
@@ -226,20 +184,21 @@ END HELP FILE */
 // MAIN PROGRAM
 /*###############################################################################################*/
 
-capture program drop estimates_table_docx
+//capture program drop estimates_table_docx
 
 program estimates_table_docx
 	version 15.1
   
-	syntax namelist(min=1),	saving(string) [title(string)] [note(string)] ///
-		[view(string)] ///
+	syntax namelist(min=1),	///
+		saving(string) ///
+		[title(string)] ///
 		[bdec(real .01)] ///
 		[star(string)] ///
 		[baselevels] ///
 		[landscape]
 	
 	// set local holding the names of estimates to be reported in table
-	local models= "`namelist'" //space sparated list of estimates
+	local models= "`namelist'" //space separated list of estimates
 	
 	// defualt significanse values if none are provided
 	if ("`star'"=="") local star ".05 .01 .001"
