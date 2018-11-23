@@ -26,14 +26,16 @@ Usage
 Title
 -----
 
-estimates_table_docx -- a command giving same fucntionality as estimates table but exports results directly to a Wordtable
+estimates_table_docx 
+
+-- a command giving same functionality as estimates table but exports results directly to a Word table
 
 Syntax
 ------
 estimates_table_docx namelist [, options]
 
 options               Description
----------------------------------------------------------------------------------------------------------------------------
+
 Main
   saving(filename)    Path/filename of the generated docx file.
   title(string)        Optional title for table.
@@ -41,7 +43,7 @@ Main
   star(numlist)       Numlist of significanse levels. Default is .05 .01 .001.
   baselevels          Include all baselevels.
   landscape           Use landscape layout for worddocument.
----------------------------------------------------------------------------------------------------------------------------
+
 
 Description
 ------------
@@ -55,47 +57,45 @@ Description
 
 Options
 ------------
+saving(string)Path/filename of the generated docx file.
 
-Main +-----------------------------------------------------------------
+title(string) Optional title for table.
 
-    saving(string)Path/filename of the generated docx file.
+bdec(real .01) Number of decimal places used for paramaters. Default is .01
 
-    title(string) Optional title for table.
+star(numlist .05 .01 .001) significance levels.
 
-    bdec(real .01) Number of decimal places used for paramaters. Default is .01
+baselevels Include all baselevels in the resulting table.
 
-    star(numlist .05 .01 .001) significance levels.
-
-    baselevels Include all baselevels in the resulting table.
-
-    landscape Include all baselevels in the table.
+landscape Include all baselevels in the table.
 
 Examples
-------------
----------------------------------------------------------------------
+--------
+
 Setup
 ```stata
     . sysuse nlsw88, clear
 ´´´
 Run estimation command
+```stata
     . logistic never_married c.age i.race i.collgrad c.wage
-
+´´´
 Store model using estimates
 ```stata
     . estimates store base
 ´´´
 Run second model
-
+```stata
     . logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)
-
+´´´
 Store second model using estimates
+```stata
     . estimates store grade
-
+´´´
 Run command to produce table in Word document estimates_table.docx
+```stata
     . estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
-
-
---------------------------------------------------------------------------
+´´´
 
 Author
 -------
