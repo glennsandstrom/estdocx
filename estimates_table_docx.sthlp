@@ -84,17 +84,8 @@ namelist
 
 {pstd}Run command to produce table in Word document estimates_table.docx{p_end}
 {phang2}{cmd:. estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels}
-
-
     {hline}
-    Setup
-{phang2}{cmd:. sysuse auto, clear}{p_end}
-{phang2}{cmd:. tabulate rep78}{p_end}
-{phang2}{cmd:. tabulate foreign}{p_end}
 
-{pstd}Shorthand for above two commands{p_end}
-{phang2}{cmd:. tab1 rep78 foreign}{p_end}
-    {hline}
 
 {title:Author}
 {p}
