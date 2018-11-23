@@ -28,21 +28,20 @@ Title
 
 estimates_table_docx 
 
--- a command giving same functionality as estimates table but exports results directly to a Word table
+A command giving same functionality as estimates table but exports results directly to a Word table
 
 Syntax
 ------
 estimates_table_docx namelist [, options]
 
-options               Description
-
-Main
-  saving(filename)    Path/filename of the generated docx file.
-  title(string)        Optional title for table.
-  bdec(real)          Number of decimal places used for paramaters. Default is .01
-  star(numlist)       Numlist of significanse levels. Default is .05 .01 .001.
-  baselevels          Include all baselevels.
-  landscape           Use landscape layout for worddocument.
+Options           | Description
+----------------- | -------------
+saving(filename)  |  Path/filename of the generated docx file.
+title(string)     |  Optional title for table.
+bdec(real)        |  Number of decimal places used for parameters. Default is .01
+star(numlist)     |  Numlist of significance levels. Default is .05 .01 .001.
+baselevels        |  Include all baselevels.
+landscape         |  Use landscape layout for Word document.
 
 
 Description
