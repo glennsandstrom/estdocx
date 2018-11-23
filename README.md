@@ -54,46 +54,32 @@ Description
     issues and allows some additional benefits by providing options for the formating of the resulting table and inclusion of
     legend etc.
 
-Options
-------------
-saving(string)Path/filename of the generated docx file.
-
-title(string) Optional title for table.
-
-bdec(real .01) Number of decimal places used for paramaters. Default is .01
-
-star(numlist .05 .01 .001) significance levels.
-
-baselevels Include all baselevels in the resulting table.
-
-landscape Include all baselevels in the table.
-
 Examples
 --------
 
 Setup
 ```stata
-    . sysuse nlsw88, clear
+sysuse nlsw88, clear
 ´´´
 Run estimation command
 ```stata
-    . logistic never_married c.age i.race i.collgrad c.wage
+logistic never_married c.age i.race i.collgrad c.wage
 ´´´
 Store model using estimates
 ```stata
-    . estimates store base
+estimates store base
 ´´´
 Run second model
 ```stata
-    . logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)
+logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)
 ´´´
 Store second model using estimates
 ```stata
-    . estimates store grade
+estimates store grade
 ´´´
 Run command to produce table in Word document estimates_table.docx
 ```stata
-    . estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
+estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
 ´´´
 
 Author
