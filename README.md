@@ -1,4 +1,4 @@
-# estimates_table_docx
+# estimates_table_docx v. 1.1
 Program to produce publication ready regression tables in MS Word from stored estimates
 
 See file test_estimates_docx for examples of how to use the program.
@@ -26,37 +26,37 @@ Usage
 Title
 -----
 
-    estimates_table_docx -- a command giving same fucntionality as estimates table but exports results directly to a Wordtable
+estimates_table_docx -- a command giving same fucntionality as estimates table but exports results directly to a Wordtable
 
 Syntax
 ------
-        estimates_table_docx namelist [, options]
+estimates_table_docx namelist [, options]
 
-    options               Description
-    ---------------------------------------------------------------------------------------------------------------------------
-    Main
-      saving(filename)    Path/filename of the generated docx file.
-      title(string)        Optional title for table.
-      bdec(real)          Number of decimal places used for paramaters. Default is .01
-      star(numlist)       Numlist of significanse levels. Default is .05 .01 .001.
-      baselevels          Include all baselevels.
-      landscape           Use landscape layout for worddocument.
-    ---------------------------------------------------------------------------------------------------------------------------
+options               Description
+---------------------------------------------------------------------------------------------------------------------------
+Main
+  saving(filename)    Path/filename of the generated docx file.
+  title(string)        Optional title for table.
+  bdec(real)          Number of decimal places used for paramaters. Default is .01
+  star(numlist)       Numlist of significanse levels. Default is .05 .01 .001.
+  baselevels          Include all baselevels.
+  landscape           Use landscape layout for worddocument.
+---------------------------------------------------------------------------------------------------------------------------
 
 Description
 ------------
 
-    estimates_table_docx Takes a namlist of stored estiamtes and exports this to a publication quality table in MS Word.
+    estimates_table_docx Takes a namelist of stored estiamtes and exports this to a publication quality table in MS Word.
     Although it is possible to export estimates to a table using the command putdocx Stata 15 (i.e. putdocx table results =
     etable) This method causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making
     it difficult to choose alignment in the cells and the need to erase these characters.  estimates_table_docx avoid such
-    issues and allowes some additonal benefits by providing options for the formating of the reuslting table and inclusion of
+    issues and allows some additional benefits by providing options for the formating of the resulting table and inclusion of
     legend etc.
 
 Options
 ------------
-        +------+
-    ----+ Main +---------------------------------------------------------------------------------------------------------------
+
+Main +-----------------------------------------------------------------
 
     saving(string)Path/filename of the generated docx file.
 
@@ -64,7 +64,7 @@ Options
 
     bdec(real .01) Number of decimal places used for paramaters. Default is .01
 
-    star(numlist .05 .01 .001) significanse levels.
+    star(numlist .05 .01 .001) significance levels.
 
     baselevels Include all baselevels in the resulting table.
 
@@ -72,30 +72,30 @@ Options
 
 Examples
 ------------
-    -----------------------------------------------------------------------------------------------------------------------------
-    Setup
-    ```stata
-        . sysuse nlsw88, clear
-    ´´´
-    Run estimation command
-        . logistic never_married c.age i.race i.collgrad c.wage
+---------------------------------------------------------------------
+Setup
+```stata
+    . sysuse nlsw88, clear
+´´´
+Run estimation command
+    . logistic never_married c.age i.race i.collgrad c.wage
 
-    Store model using estimates
-    ```stata
-        . estimates store base
-    ´´´
-    Run second model
-    
-        . logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)
+Store model using estimates
+```stata
+    . estimates store base
+´´´
+Run second model
 
-    Store second model using estimates
-        . estimates store grade
+    . logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)
 
-    Run command to produce table in Word document estimates_table.docx
-        . estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
+Store second model using estimates
+    . estimates store grade
+
+Run command to produce table in Word document estimates_table.docx
+    . estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
 
 
-    -----------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------
 
 Author
 -------
