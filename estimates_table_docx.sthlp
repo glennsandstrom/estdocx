@@ -1,9 +1,9 @@
 {smcl}
-{* *! version 1.0 20181110 }{...}
+{* *! version 1.1 20181123 }{...}
 
 {title:Title}
 {phang}
-{bf:estimates_table_docx} {hline 2} a command giving same fucntionality as estimates table 
+{bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
 but exports results directly to a Wordtable
 
 {marker syntax}{...}
@@ -33,13 +33,13 @@ namelist
 {pstd}
 
 {pstd}
- {cmd:estimates_table_docx} Takes a namlist of stored estiamtes and exports this to a publication
+ {cmd:estimates_table_docx} Takes a namelist of stored estimates and exports this to a publication
  quality table in MS Word. Although it is possible to export estimates to a table 
  using the command putdocx Stata 15 (i.e. putdocx table results = etable) This method causes 
  unwanted formatting issues in the resulting table such as e.g. hidden characters in cells
  making it difficult to choose alignment in the cells and the need to erase these characters.
  estimates_table_docx avoid such issues and allowes some additonal benefits by providing 
- options for the formating of the reuslting table and inclusion of legend etc.
+ options for the formating of the resulting table and inclusion of legend etc.
 
 {marker options}{...}
 {title:Options}

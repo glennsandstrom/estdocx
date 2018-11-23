@@ -2,9 +2,9 @@ d 'estimates_table_docx':program proving same fucntionality as estimates table b
 d
 d The command putdocx in Stata 15 provide a native implementation for exporting estimates
 d trough the command docx table results = etable.
-d However, using etable directly after etstimates store causes unwanted formatting issues in the resulting table. E.g. hidden characters in cells
-d making formating of the table in MSWord difficult. This implemtation avoid such issues and allowes some
-d additonal benefits by providing options for the formating of the resulting table, automatic inclusion of
+d However, using etable directly after estimates store causes unwanted formatting issues in the resulting table. E.g. hidden characters in cells
+d making formating of the table in MSWord difficult. This implementation avoid such issues and allows some
+d additional benefits by providing options for the formating of the resulting table, automatic inclusion of
 d legend etc.
 d
 d KW: Regression tables
