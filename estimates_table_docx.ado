@@ -78,7 +78,8 @@
 				matrix roweq `model' = "" 
 			
 			}
-				
+			
+			// call mata to form the matrix with model paramters
 			mata: models_varlist("`models'")
 			mata: model_stats("`models'", "`modelvars'", "b pvalue")
 			
@@ -203,6 +204,7 @@ program estimates_table_docx
 	// defualt significanse values if none are provided
 	if ("`star'"=="") local star ".05 .01 .001"
 	if ("`saving'"=="") local saving "estimates_table.docx"
+	
 	/**************************************************************************/
 	/** CREATE TABLE                     **/
 	/**************************************************************************/
@@ -235,7 +237,7 @@ program estimates_table_docx
 		mata: paramtype("`var'") //returns locals: paramtype, label, vlab, base, omit
 
 		if "`paramtype'"=="factor" | "`paramtype'"=="f#f" | "`paramtype'"=="c#f"{
-			// Always print if base==FALSE and only print if baselevels== TURE if base==TRUE
+			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
 			if !`base' | "`baselevels'"!="" {
 				//check if varname is in the list of printed varnames
 				local lab= subinstr("`label'", " ", "", .) //remove all whitespeace
@@ -288,7 +290,6 @@ mata: mata set matastrict on
 mata: mata set matalnum on
 
 mata:
-
 /*###############################################################################################*/
 // STRUCTURES
 /*###############################################################################################*/
@@ -357,11 +358,11 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 	col=1
 	for (i=1; i<=length(this_models); i++) {
 		model= this_models[1,i]
-		rtable= st_matrix(model)
+		rtable= st_matrix(model)			//get mat 
 		rownames= st_matrixrowstripe(model) //get varlist of model
 		colnames= st_matrixcolstripe(model) //get stats of model
-		colnames= colnames[.,2] //remove first row that is all missing
-		rownames= rownames[.,2] //remove first row that is all missing
+		colnames= colnames[.,2] 			//remove first row that is all missing
+		rownames= rownames[.,2] 			//remove first row that is all missing
 
 		//loop over varlist
 		for (ii=1; ii<=length(this_varlist); ii++) {
@@ -398,7 +399,7 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 }
 
 void models_varlist(string scalar models){
-	string scalar model, param, paramaters
+	string scalar model, param, paramaters, level
 	string vector this_models
 	real scalar i, ii, found, nummodels
 	string matrix rownames, allvars, unique
@@ -420,6 +421,14 @@ void models_varlist(string scalar models){
 		allvars= rownames\allvars  //add model parameters as additionl rows in allvars
 		
 	}
+	
+	// remove letters indicating base, omitted, continious
+	for (i=1; i<=length(allvars); i++) {
+		//remove b, o, c only from part of string before the .
+		allvars[i,1]=subinstr(allvars[i,1], "b.", ".")
+		allvars[i,1]=subinstr(allvars[i,1], "o.", ".")	
+	}
+		
 	//set first cell in vector unique to first paramater in allvars
 	unique= allvars[1,1]
 	
