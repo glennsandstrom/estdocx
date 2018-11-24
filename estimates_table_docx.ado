@@ -343,7 +343,7 @@ void sig_param(real scalar param, real scalar sig, string scalar star, real scal
 void model_stats(string scalar models, string scalar varlist, string scalar stats){
 	string scalar model, param
 	string vector this_models, this_varlist, this_stats, rownames, colnames
-	real scalar i, ii, nummodels, rowvarlist, rowmodel, col, mlenth
+	real scalar a, b, c, nummodels, rowvarlist, rowmodel, col, mlenth
 	
 	real matrix model_betas, model_p, rtable
 	string matrix A
@@ -356,23 +356,34 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 	model_betas= J(length(this_varlist), length(this_models), .)
 	model_p= J(length(this_varlist), length(this_models), .)
 	col=1
-	for (i=1; i<=length(this_models); i++) {
-		model= this_models[1,i]
-		rtable= st_matrix(model)			//get mat 
+	for (a=1; a<=length(this_models); a++) {
+		model= this_models[1,a]
+		
+		//get matrix rtable created by running estimates replay `model' in get_models
+		rtable= st_matrix(model)
 		rownames= st_matrixrowstripe(model) //get varlist of model
 		colnames= st_matrixcolstripe(model) //get stats of model
 		colnames= colnames[.,2] 			//remove first row that is all missing
 		rownames= rownames[.,2] 			//remove first row that is all missing
-
-		//loop over varlist
-		for (ii=1; ii<=length(this_varlist); ii++) {
-			param= this_varlist[1,ii]
-			
+		
+		// remove letters indicating base, omitted, continious from rownames
+		// as these are removed from varlist in function models_varlist that
+		// is passed to this function from get_models
+		for (b=1; b<=length(rownames); b++) {
+			//remove b, o, c only from part of string before the .
+			rownames[b,1]=subinstr(rownames[b,1], "b.", ".")
+			rownames[b,1]=subinstr(rownames[b,1], "o.", ".")	
+		}
+		this_models[1,a]
+		rownames
+		//loop over varlist and populate matrix model_betas and model_p
+		for (c=1; c<=length(this_varlist); c++) {
+			param= this_varlist[1,c]
 			//check if param is in rownames of the model
 			if (anyof(rownames, param)){ //if param is in  is get the index
 				
 				rowvarlist= getindex(param, this_varlist) //find row of param in unique varlist
-				rowmodel= getindex(param, rownames)       //find row of param in model rownames
+				rowmodel= getindex(param, rownames)       //find row of param in rownames
 				model_betas[rowvarlist,col]= rtable[rowmodel,getindex("b", colnames)]
 				model_p[rowvarlist,col]= rtable[rowmodel,getindex("pvalue", colnames)]
 			}
@@ -381,17 +392,21 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 		//increment column
 		++col
 	}
-	
+
 	st_matrix("model_betas", model_betas)
 	st_matrix("model_p", model_p)
 	
+	//måste lägga till en tom rad för att funka med colstripe etc. nedan
 	A= J(length(this_varlist), 1, "")
 	this_varlist= this_varlist'
 	this_varlist= A,this_varlist
+	this_varlist
 	
 	A= J(length(this_models), 1, "")
 	this_models= this_models'
 	this_models= (A,this_models)
+	
+	// set the row and colnames of the returned matrices
 	st_matrixrowstripe("model_betas", this_varlist)
 	st_matrixrowstripe("model_p", this_varlist)
 	st_matrixcolstripe("model_betas", this_models)
