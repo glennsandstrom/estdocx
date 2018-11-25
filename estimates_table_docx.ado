@@ -1,4 +1,14 @@
-
+/**************************************************************************/
+/**TODO  **/
+/**************************************************************************/
+// * Recode logic for printing table by looping over matrix model_betas
+//   Should be much simpler to just use the matrix model_betas and loop 
+//   over that to form the table.
+//
+// * Implement additonal signs for significanse with dagger mark as e.g. style
+//   in Demography.
+//
+// * Implement option to include AIC, BIC, linktest etc. 
 /**************************************************************************/
 /**SUB-ROUTINES  **/
 /**************************************************************************/
@@ -215,13 +225,13 @@ program estimates_table_docx
 	/** Get unique varlist from estimates for each of the specified models **/
 	/**************************************************************************/
 	get_models `models' 
-	
 	// returns 
 	// 1. r(params)= MACRO STRING nicley formated list of unique paramters making 
 	//    up rows in matrix r(model_betas) & r(model_p)
 	// 2. r(numparams)= SCALAR Number of paramters
 	// 3. r(model_betas) MATRIX beta of all models
 	// 4. r(model_p) MATRIX pvalues of all models
+	// 5. 
 	/**************************************************************************/
 	/** PRINT ALL THE UNIQUE VARIABLES OCCURING IN THE MODELS AND THEIR LEVELS*/
 	/**************************************************************************/
@@ -234,11 +244,11 @@ program estimates_table_docx
 		/**************************************************************************/	
 		// Check the type of the parameter 1. CONTINIOUS/CONS 2. FACTOR 3.INTERACTION 
 		/**************************************************************************/
-		mata: paramtype("`var'") //returns locals: paramtype, label, vlab, base, omit
-
+		mata: paramtype("`var'") //returns locals: paramtype, label, vlab
+		
 		if "`paramtype'"=="factor" | "`paramtype'"=="f#f" | "`paramtype'"=="c#f"{
 			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
-			if !`base' | "`baselevels'"!="" {
+			if !baselevels[`param', 1] | "`baselevels'"!="" {
 				//check if varname is in the list of printed varnames
 				local lab= subinstr("`label'", " ", "", .) //remove all whitespeace
 				
@@ -343,8 +353,8 @@ void sig_param(real scalar param, real scalar sig, string scalar star, real scal
 void model_stats(string scalar models, string scalar varlist, string scalar stats){
 	string scalar model, param
 	string vector this_models, this_varlist, this_stats, rownames, colnames
-	real scalar a, b, c, nummodels, rowvarlist, rowmodel, col, mlenth
-	
+	real scalar a, b, c, nummodels, rowvarlist, rowmodel, col, mlenth, rowsum
+	real vector baselevels	// vector of booleans= TRUE if row of model_betas only contains 1 or .
 	real matrix model_betas, model_p, rtable
 	string matrix A
 	
@@ -374,8 +384,6 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 			rownames[b,1]=subinstr(rownames[b,1], "b.", ".")
 			rownames[b,1]=subinstr(rownames[b,1], "o.", ".")	
 		}
-		this_models[1,a]
-		rownames
 		//loop over varlist and populate matrix model_betas and model_p
 		for (c=1; c<=length(this_varlist); c++) {
 			param= this_varlist[1,c]
@@ -392,15 +400,29 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 		//increment column
 		++col
 	}
-
+	
+	//create colvector baselevels indicating rows that only contain 1:s or . ==baselevel
+	baselevels= J(rows(model_betas), 1, .)
+	
+	for (a=1; a<=rows(model_betas); a++) {
+		rowsum=0
+		
+		for (b=1; b<=cols(model_betas); b++) {
+			if (model_betas[a,b]==. | model_betas[a,b]==1) rowsum++
+		}
+		
+		if (rowsum== cols(model_betas)) baselevels[a,1] = 1
+		else baselevels[a,1] = 0
+	}
+	
 	st_matrix("model_betas", model_betas)
 	st_matrix("model_p", model_p)
+	st_matrix("baselevels", baselevels)
 	
 	//måste lägga till en tom rad för att funka med colstripe etc. nedan
 	A= J(length(this_varlist), 1, "")
 	this_varlist= this_varlist'
 	this_varlist= A,this_varlist
-	this_varlist
 	
 	A= J(length(this_models), 1, "")
 	this_models= this_models'
