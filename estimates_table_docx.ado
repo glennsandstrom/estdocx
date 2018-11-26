@@ -8,6 +8,8 @@
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
 //
+// * Implement higher order interactions than 2-way
+//
 // * Implement option to include AIC, BIC, linktest etc. 
 /**************************************************************************/
 /**SUB-ROUTINES  **/
@@ -48,13 +50,13 @@
 			halign(left) layout(autofitcontents)
 			
 			//set column lable for x-variables
-			putdocx table esttable(1,1) = ("Variables"), bold font(Garamond, 10) halign(left)
+			putdocx table esttable(1,1) = ("Variables"), bold font(Garamond, 11) halign(left) 
 			
 			
 			forvalues col=2/`COLUMNS' {
 				local mod= `col'-1
 				local model: word `mod' of `models'
-				putdocx table esttable(1,`col') = ("`model'"),	bold font(Garamond, 10) halign(left)
+				putdocx table esttable(1,`col') = ("`model'"),	bold font(Garamond, 11) halign(left)
 				
 			}
 	end
@@ -125,7 +127,7 @@
 			local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
 			local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
 			mata: sig_param(`b', `p', "`star'", `bdec') // returns local param 
-			putdocx table esttable(`row',`col') = ("`param'"), halign(left)
+			putdocx table esttable(`row',`col') = ("`param'"), halign(left) 
 			local ++col
 		}
 			
@@ -236,11 +238,12 @@ program estimates_table_docx
 	/** PRINT ALL THE UNIQUE VARIABLES OCCURING IN THE MODELS AND THEIR LEVELS*/
 	/**************************************************************************/
 	local row= 1
+	local betarow= 1
+	local rows: rowsof r(model_betas) // rows of full table
+	local varlist: rowvarlist r(model_betas)
 	
-	forvalues param=1/`r(numparams)' {
-		//get varname from list of paramters 
-		local var: word `param' of `r(params)'
-		
+	foreach var in `varlist' {
+			
 		/**************************************************************************/	
 		// Check the type of the parameter 1. CONTINIOUS/CONS 2. FACTOR 3.INTERACTION 
 		/**************************************************************************/
@@ -248,7 +251,7 @@ program estimates_table_docx
 		
 		if "`paramtype'"=="factor" | "`paramtype'"=="f#f" | "`paramtype'"=="c#f"{
 			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
-			if !baselevels[`param', 1] | "`baselevels'"!="" {
+			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
 				//check if varname is in the list of printed varnames
 				local lab= subinstr("`label'", " ", "", .) //remove all whitespeace
 				
@@ -278,7 +281,7 @@ program estimates_table_docx
 			di as error "{error} Program does not support this type of parameter"
 		
 		}
-	
+	local ++betarow
 	}
 	
 	// set border on bottom of header row
@@ -293,6 +296,11 @@ program estimates_table_docx
 	/**************************************************************************/
 	//putdocx describe esttable
 	putdocx save "`saving'", replace
+	
+	/**************************************************************************/
+	/** Garbage collection             **/
+	/**************************************************************************/
+	//matrix drop _all
 
 end
 version 15.1
@@ -305,7 +313,6 @@ mata:
 /*###############################################################################################*/
 
 struct paratype {
-	real scalar omit, base					// public return values as stata macros
 	string scalar paramtype, label, vlab	// public return values as stata macros
 	
 	real scalar interaction					// private
@@ -517,20 +524,13 @@ void interaction_type(struct paratype scalar P) {
 	string matrix levels
 	
 	P.intervars=tokens(subinstr(P.param, "#", " ") ) //matrix with varnames forming the interaction
-	P.omit= P.base = 0 // intialize to false
+	if (length(P.intervars) > 2) _error("Program estimates_table_docx does not support more than 2-way interactions")
 	
 	levels= J(cols(P.intervars), 1 , "")
 	//determine type of interaction
 	for(i=1; i<=cols(P.intervars); i++) {
 		P.level= substr(P.intervars[i] , 1 , strrpos(P.intervars[i],".")-1 )
-				
-		//check if one of the included parameters in the interaction is a base or omitted category
-		if(!P.omit) P.omit= strrpos(P.level,"o") // if level contains o it´s an omitted parameter
-		if(!P.base) P.base= strrpos(P.level,"b") // if level contains b it´s a base parameter
-				
-		//remove base, omitted prefix from level => st_vlmap(string varname, real level)
-		P.level= subinstr(P.level, "b", "")
-		P.level= subinstr(P.level, "o", "")
+		
 		// regular expression matching if first letter is real => factor
 		if (regexm(P.level, "^[0-9]")) P.level= "f"
 		levels[i]= P.level
@@ -549,7 +549,7 @@ void interaction_type(struct paratype scalar P) {
 }
 
 void paramtype(string scalar param) {
-	// returns as macros paramtype, label, vlab, base, omit
+	// returns macros paramtype, label, vlab
 	// paramtype: the type of parameter: continious, factor, constant, f#f, c#f, c#c
 	// label: the full combination of label(s) to print in the header column
 	// vlab: the full combination of valuelabel(s) to print if it is a factor involved
@@ -559,6 +559,8 @@ void paramtype(string scalar param) {
 	struct paratype scalar P
 	P.param= param
 	
+	//replace all occurences of bn in the levels
+	P.param= subinstr(P.param, "bn.", ".") 
 	
 	//check if parameter is an interaction
 	P.interaction= strrpos(P.param,"#") // if param contains # it´s an interaction
@@ -620,11 +622,6 @@ void paramtype(string scalar param) {
 	else {
 		P.varname= substr(P.param , strrpos(P.param,".")+1 ,  strlen(P.param))
 		P.level= substr(P.param , 1 , strrpos(P.param,".")-1 )
-		P.omit= strrpos(P.level,"o") // if level contains o it´s an omitted parameter
-		P.base= strrpos(P.level,"b") // if level contains b it´s a base parameter
-		
-		P.level= subinstr(P.level, "b", "")
-		P.level= subinstr(P.level, "o", "")
 		
 		if(P.level!="") {
 			P.paramtype= "factor"
@@ -643,7 +640,7 @@ void paramtype(string scalar param) {
 			}
 			
 	}
-	/*	
+	/*
 	printf("{txt}param is:{result} %s\n", P.param)
 	printf("{txt}varname is:{result} %s\n", P.varname)
 	printf("{txt}level is:{result} %s\n", P.level)
@@ -651,14 +648,10 @@ void paramtype(string scalar param) {
 	printf("{txt}label is:{result} %s\n", P.label)
 	printf("{txt}vlab is:{result} %s\n", P.vlab)
 	printf("{txt}paramtype is:{result} %s\n", P.paramtype)
-	printf("{txt}base is:{result} %f\n", P.base)
-	printf("{txt}omit is:{result} %f\n", P.omit)
 	*/
 	st_local("paramtype", P.paramtype)
 	st_local("vlab", P.vlab)
 	st_local("label", P.label)
-	st_local("base", strofreal(P.base))
-	st_local("omit", strofreal(P.omit))
 	
 	//liststruct(P)
 }
