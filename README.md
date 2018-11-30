@@ -75,7 +75,7 @@ logistic never_married c.age i.race i.collgrad c.wage
 ```
 Store model using estimates
 ```stata
-estimates store base
+estimates store _1_
 ```
 Run second model
 ```stata
@@ -83,11 +83,11 @@ logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)
 ```
 Store second model using estimates
 ```stata
-estimates store grade
+estimates store _2_
 ```
 Run command to produce table in Word document estimates_table.docx
 ```stata
-estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
+estimates_table_docx _1_ _2_, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
 ```
 
 Author
