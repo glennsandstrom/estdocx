@@ -74,13 +74,19 @@ namelist
 {phang2}{cmd:. logistic never_married c.age i.race i.collgrad c.wage}
 
 {pstd}Store model using estimates{p_end}
-{phang2}{cmd:. estimates store base}
+{phang2}{cmd:. estimates store _1_}
 
 {pstd}Run second model{p_end}
-{phang2}{cmd:. logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)}
+{phang2}{cmd:. logistic never_married c.age i.race i.collgrad c.wage c.grade}
 
 {pstd}Store second model using estimates{p_end}
-{phang2}{cmd:. estimates store grade}
+{phang2}{cmd:. estimates store _2_}
+
+{pstd}Run third model{p_end}
+{phang2}{cmd:. logistic never_married c.age i.race b1.collgrad c.wage c.grade c.tenure collgrad#race b1.collgrad#c.tenure}
+
+{pstd}Store third model using estimates{p_end}
+{phang2}{cmd:. estimates store _3_}
 
 {pstd}Run command to produce table in Word document estimates_table.docx{p_end}
 {phang2}{cmd:. estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels}
