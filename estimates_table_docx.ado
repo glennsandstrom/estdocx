@@ -1,9 +1,6 @@
 /**************************************************************************/
 /**TODO  **/
 /**************************************************************************/
-// * Recode logic for printing table by looping over matrix model_betas
-//   Should be much simpler to just use the matrix model_betas and loop 
-//   over that to form the table.
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
