@@ -1,7 +1,16 @@
 # estimates_table_docx v. 1.1
-Program to produce publication ready regression tables in MS Word from stored estimates
+Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
+```stata
+estimates table
+```
+in Stata.
+See help file for examples of how tho use the program.
 
-See file test_estimates_docx for examples of how to use the program.
+Example of output in MS Word format
+===================================
+This is the result of running the example found in the helpfile
+
+
 
 Installation
 ============
