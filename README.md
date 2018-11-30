@@ -9,8 +9,7 @@ See help file for examples of how tho use the program.
 Example of output in MS Word format
 ===================================
 This is the result of running the example found in the helpfile
-
-
+![exampletable](example.png)
 
 Installation
 ============
