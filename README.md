@@ -85,9 +85,17 @@ Store second model using estimates
 ```stata
 estimates store _2_
 ```
+Run third model
+```stata
+logistic never_married c.age i.race b1.collgrad c.wage c.grade c.tenure collgrad#race b1.collgrad#c.tenure
+```
+Store second model using estimates
+```stata
+estimates store _3_
+```
 Run command to produce table in Word document estimates_table.docx
 ```stata
-estimates_table_docx _1_ _2_, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
+estimates_table_docx _1_ _2_ __3, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
 ```
 
 Author
