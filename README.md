@@ -1,4 +1,4 @@
-# estimates_table_docx v. 1.1
+# estimates_table_docx v. 1.2
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
