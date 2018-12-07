@@ -339,7 +339,7 @@ void sig_param(real scalar param, real scalar sig, string scalar star, real scal
 	
 	printf("{txt}fmt is:{result} %s:\n", fmt)
 	*/
-	if (param==1) {
+	if (param==1 | param==0) {
 		parameter= "(base)"
 	}
 	else {
@@ -412,7 +412,7 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 		rowsum=0
 		
 		for (b=1; b<=cols(model_betas); b++) {
-			if (model_betas[a,b]==. | model_betas[a,b]==1) rowsum++
+			if (model_betas[a,b]==. | model_betas[a,b]==1 | model_betas[a,b]==0) rowsum++
 		}
 		
 		if (rowsum== cols(model_betas)) baselevels[a,1] = 1
