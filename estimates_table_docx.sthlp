@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.1 20181123 }{...}
-
+{* *! version 1.2.1 20181123 }{...}
+{right:version 1.2.1}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
