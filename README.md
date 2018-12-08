@@ -17,15 +17,12 @@ Either use net command in Stata:
 ```stata
 net install estimates_table_docx , from(https://github.com/glennsandstrom/estimates_table_docx/raw/master/)
 ```
-Or first intall haghish github command for Stata:
+Updating
+============
+Use the same command as above but add the option replace
 ```stata
-net install github, from("https://haghish.github.io/github/")
+net install estimates_table_docx , from(https://github.com/glennsandstrom/estimates_table_docx/raw/master/) replace
 ```
-....and the run 
-```stata
-github install glennsandstrom/estimates_table_docx
-```
-in Stata.
 
 Usage
 =====
