@@ -461,6 +461,7 @@ void models_varlist(string scalar models){
 		rownames= rownames[.,2] //remove first row that is all missing
 		allvars= rownames\allvars  //add model parameters as additionl rows in allvars
 		
+		
 	}
 	
 	// remove letters indicating base, omitted, continious
@@ -473,28 +474,32 @@ void models_varlist(string scalar models){
 	//set first cell in vector unique to first paramater in allvars
 	unique= allvars[1,1]
 	
-	//setstring scalar paramaters to value of first cell in allvars
+	//set string scalar paramaters to value of first cell in allvars
 	paramaters= allvars[1,1]
 	
-	//boolean for indicating if paramter is added or not the the unique list
-	found=0
-	
-	//loop over complete list of pramaters and add ones not in unique
+	//loop over complete list of prameters and add ones not in unique
 	for (i=2; i<=length(allvars); i++) {
+		//boolean for indicating if paramter is added or not the the unique list
+		found=0
 		//set string scalar param to paramter i of allvars
 		param= allvars[i,1]
 		
 		// loop over unique and set found==TRUE if parameter is already in list
 		for (ii=1; ii<=length(unique); ii++) {
-			if (unique[ii,1]==param) found=1
+			if (strmatch(unique[ii,1], param)) found=1				
 		}
 		//if param is not already in list add it to vector unique and string parameters
+		//printf("{txt}param: {res}%s {txt}found: {res}%f\n", param, found)
 		if(!found){
 			unique= unique\param
 			paramaters= paramaters + " " + param
 			}
 	}
-		
+	//"uniqrows is:"
+	//test= uniqrows(allvars) 
+	//test
+	//"uniqe is:"
+	//unique
 	//printf("{txt}Content of pramaters is {res}%s\n", paramaters)
 	st_local("modelvars", paramaters)
 	st_local("numparams", strofreal(length(unique)))
