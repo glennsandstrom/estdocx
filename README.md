@@ -51,7 +51,6 @@ landscape         |  Use landscape layout for Word document.
 
 Description
 ------------
-
 estimates_table_docx takes a namelist of stored estiamtes and exports this to a publication quality table in MS Word.
 Although it is possible to export estimates to a table using the command putdocx in Stata 15 (i.e. putdocx table results =
 etable). The builtin method causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making
