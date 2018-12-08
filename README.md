@@ -52,12 +52,12 @@ landscape         |  Use landscape layout for Word document.
 Description
 ------------
 
-    estimates_table_docx Takes a namelist of stored estiamtes and exports this to a publication quality table in MS Word.
-    Although it is possible to export estimates to a table using the command putdocx Stata 15 (i.e. putdocx table results =
-    etable) This method causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making
-    it difficult to choose alignment in the cells and the need to erase these characters.  estimates_table_docx avoid such
-    issues and allows some additional benefits by providing options for the formating of the resulting table and inclusion of
-    legend etc.
+estimates_table_docx Takes a namelist of stored estiamtes and exports this to a publication quality table in MS Word.
+Although it is possible to export estimates to a table using the command putdocx Stata 15 (i.e. putdocx table results =
+etable) This method causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making
+it difficult to choose alignment in the cells and the need to erase these characters.  estimates_table_docx avoid such
+issues and allows some additional benefits by providing options for the formating of the resulting table and inclusion of
+legend etc.
 
 Examples
 --------
