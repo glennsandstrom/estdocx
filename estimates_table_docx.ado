@@ -250,7 +250,7 @@ program estimates_table_docx
 			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
 			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
 				//check if varname is in the list of printed varnames
-				local lab= subinstr("`label'", " ", "", .) //remove all whitespeace
+				local lab= subinstr("`label'", " ", "", .) //remove all whitespace
 				
 				local print : list posof "`lab'" in printed
 				//header row with variable label for factor has not been printed => add header row
@@ -414,7 +414,7 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 		for (b=1; b<=cols(model_betas); b++) {
 			if (model_betas[a,b]==. | model_betas[a,b]==1 | model_betas[a,b]==0) rowsum++
 		}
-		
+		// if rowsum== columns of model_betas row only contains baselevels
 		if (rowsum== cols(model_betas)) baselevels[a,1] = 1
 		else baselevels[a,1] = 0
 	}
@@ -627,17 +627,25 @@ void paramtype(string scalar param) {
 		
 		if(P.level!="") {
 			P.paramtype= "factor"
-			P.label= st_varlabel(P.varname)
-			P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
+			
+			// check that a varlabel is set else return varname in P.label
+			if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
+			else P.label= P.varname
+			// check that valuelbels are set else return P.level in P.vlab 
+			if (st_varvaluelabel(P.varname)!="") P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
+			else P.vlab = P.level
+
+		}
+		else {
+			if(P.varname=="_cons") {
+				P.paramtype= "constant"
+				P.label= P.varname
 			}
 			else {
-				if(P.varname=="_cons") {
-					P.paramtype= "constant"
-					P.label= P.varname
-				}
-				else {
-					P.paramtype= "continious"
-					P.label= st_varlabel(P.varname)
+				P.paramtype= "continious"
+				if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
+				else P.label= P.varname
+					
 				}
 			}
 			
