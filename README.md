@@ -17,6 +17,16 @@ Either use net command in Stata:
 ```stata
 net install estimates_table_docx , from(https://github.com/glennsandstrom/estimates_table_docx/raw/master/)
 ```
+
+Or use the excellent github command by E. F. Haghish by first running
+```stata
+net install github, from("https://haghish.github.io/github/")
+```
+...and then installing estimates_table_docx by running
+```stata
+github install glennsandstrom/estimates_table_docx
+```
+
 Updating
 ============
 Use the same command as above but add the option replace
@@ -24,6 +34,10 @@ Use the same command as above but add the option replace
 net install estimates_table_docx , from(https://github.com/glennsandstrom/estimates_table_docx/raw/master/) replace
 ```
 
+If you have used the github command by haghish rather run
+```stata
+github update estimates_table_docx
+```
 Usage
 =====
 
