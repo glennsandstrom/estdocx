@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.2.3 20181218 }{...}
-{right:version 1.2.3}
+{* *! version 1.2.4 20190113 }{...}
+{right:version 1.2.4}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
@@ -23,6 +23,7 @@ namelist
 {synopt:{opt bdec(real)}}Number of decimal places used for paramaters. Default is .01{p_end}
 {synopt:{opt star(numlist)}}Numlist of significanse levels. Default is .05 .01 .001.{p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
+{synopt:{opt keep(coflist)}}List of coifficent to indlude in table.{p_end}
 {synopt:{opt landscape}}Use landscape layout for worddocument.{p_end}
 {synoptline}
 {p2colreset}{...}
@@ -61,7 +62,12 @@ namelist
 {opt baselevels} Include all baselevels in the resulting table.
 
 {phang}
-{opt landscape} Include all baselevels in the table.
+{opt keep(coflist)} List of coifficent to indlude in table. Will present paramters in the specified order.
+Specify the the variables to be included as in estamation command but exclude level indicators.
+For Model 3 in examples you would specify age race collgrad wage grade tenure collgrad#race collgrad#tenure _cons
+
+{phang}
+{opt landscape} Use landscape layout for worddocument.
 
 {marker examples}{...}
 {title:Examples}

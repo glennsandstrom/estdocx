@@ -1,4 +1,4 @@
-# estimates_table_docx v. 1.2.3
+# estimates_table_docx v. 1.2.4
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
@@ -60,6 +60,7 @@ title(string)     |  Optional title for table.
 bdec(real)        |  Number of decimal places used for parameters. Default is .01
 star(numlist)     |  Numlist of significance levels. Default is .05 .01 .001.
 baselevels        |  Include all baselevels.
+keep(coflist)     |  List of coifficent to indlude in table.
 landscape         |  Use landscape layout for Word document.
 
 

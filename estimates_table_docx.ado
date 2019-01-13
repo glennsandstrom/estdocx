@@ -1,6 +1,7 @@
 /**************************************************************************/
 /**TODO  **/
 /**************************************************************************/
+// * Implement a keep(coeflist) option and report coefficients in order specified
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
@@ -62,7 +63,8 @@
 	program get_models, rclass
 	version 15.1
 	  
-		syntax namelist(min=1)
+		syntax namelist(min=1),	///
+		[keep(string)]
 			
 		local models= "`namelist'" //space sparated list of estimates
 		
@@ -89,7 +91,9 @@
 			}
 			
 			// call mata to form the matrix with model paramters
-			mata: models_varlist("`models'")
+			if("`keep'"=="") mata: models_varlist("`models'")
+			else mata: models_varlist("`models'", "`keep'")
+			
 			mata: model_stats("`models'", "`modelvars'", "b pvalue")
 			
 			return local params "`modelvars'"
@@ -205,6 +209,7 @@ program estimates_table_docx
 		[bdec(real .01)] ///
 		[star(string)] ///
 		[baselevels] ///
+		[keep(string)] ///
 		[landscape]
 	
 	// set local holding the names of estimates to be reported in table
@@ -223,7 +228,8 @@ program estimates_table_docx
 	/**************************************************************************/
 	/** Get unique varlist from estimates for each of the specified models **/
 	/**************************************************************************/
-	get_models `models' 
+	if("`keep'"=="") get_models `models' 
+	else get_models `models', keep(`keep')
 	// returns 
 	// 1. r(params)= MACRO STRING nicley formated list of unique paramters making 
 	//    up rows in matrix r(model_betas) & r(model_p)
@@ -392,7 +398,7 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 		for (c=1; c<=length(this_varlist); c++) {
 			param= this_varlist[1,c]
 			//check if param is in rownames of the model
-			if (anyof(rownames, param)){ //if param is in  is get the index
+			if (anyof(rownames, param)){ //if param is in get the index
 				
 				rowvarlist= getindex(param, this_varlist) //find row of param in unique varlist
 				rowmodel= getindex(param, rownames)       //find row of param in rownames
@@ -439,8 +445,8 @@ void model_stats(string scalar models, string scalar varlist, string scalar stat
 	st_matrixcolstripe("model_p", this_models)
 }
 
-void models_varlist(string scalar models){
-	string scalar model, param, paramaters, level
+void models_varlist(string scalar models, |string scalar cofkeep){
+	string scalar model, param, level
 	string vector this_models
 	real scalar i, ii, found, nummodels
 	string matrix rownames, allvars, unique
@@ -460,8 +466,6 @@ void models_varlist(string scalar models){
 		rownames= st_matrixrowstripe(model) //get varlist of model
 		rownames= rownames[.,2] //remove first row that is all missing
 		allvars= rownames\allvars  //add model parameters as additionl rows in allvars
-		
-		
 	}
 	
 	// remove letters indicating base, omitted, continious
@@ -473,11 +477,8 @@ void models_varlist(string scalar models){
 		
 	//set first cell in vector unique to first paramater in allvars
 	unique= allvars[1,1]
-	
-	//set string scalar paramaters to value of first cell in allvars
-	paramaters= allvars[1,1]
-	
-	//loop over complete list of prameters and add ones not in unique
+
+	//loop over complete list of parameters and add ones not in unique
 	for (i=2; i<=length(allvars); i++) {
 		//boolean for indicating if paramter is added or not the the unique list
 		found=0
@@ -492,7 +493,6 @@ void models_varlist(string scalar models){
 		//printf("{txt}param: {res}%s {txt}found: {res}%f\n", param, found)
 		if(!found){
 			unique= unique\param
-			paramaters= paramaters + " " + param
 			}
 	}
 	//"uniqrows is:"
@@ -501,9 +501,61 @@ void models_varlist(string scalar models){
 	//"uniqe is:"
 	//unique
 	//printf("{txt}Content of pramaters is {res}%s\n", paramaters)
-	st_local("modelvars", paramaters)
+	
+	//IMPLEMENT KEEP OPTION HERE
+		// function taking colvector unique as argument and returning sorted and
+		// constrained version using string scalar cofkeep as selection criteria
+	if(args()==2) unique= keeping(unique, cofkeep)
+	
+	st_local("modelvars", invtokens(unique'))
 	st_local("numparams", strofreal(length(unique)))
 	
+}
+
+string colvector keeping(string colvector unique, string scalar vars) {
+	string colvector this_unique, keepvars, modelvars
+	real scalar i, ii
+	string scalar cof
+	
+	// make rowvector of string keepvars (list of variables to be retained in table)
+	keepvars= tokens(vars)
+	
+	//declare colvector this_unique => limited and ordered version of coiffcents returned
+	modelvars= J(0, 1, "")
+	
+	//check that all keepvars exists in models
+		for (i=1; i<=length(unique); i++) {
+			//make colvector of the coifficents in models diregarding levels
+			// remove i. and c. from coef in unique
+			cof= unique[i,1]
+			while(regexm(cof, "[0-9]+\.")) cof= regexr(cof, "[0-9]+\.", "")
+			while(regexm(cof, "c\.")) cof= regexr(cof, "c\.", "")
+			modelvars= modelvars\cof
+		}
+		
+		for (i=1; i<=length(keepvars); i++) {
+			// if a varaible in keepwars is not found in modelvars trow error
+			if(!anyof(modelvars, keepvars[1,i])) _error(193, "Variable specfied in keep does not exist in models")
+		}
+		
+	//declare colvector this_unique => limited and ordered version of coiffcents returned
+	this_unique= J(0, 1, "")
+	
+	for (i=1; i<=length(keepvars); i++) {
+			
+		for (ii=1; ii<=length(unique); ii++) {
+			// calc cof from unique to match against current value of keepvar =>
+			// include in this_unique if coef matches value of keepvars 
+			cof= unique[ii,1]
+			while(regexm(cof, "[0-9]+\.")) cof= regexr(cof, "[0-9]+\.", "")
+			while(regexm(cof, "c\.")) cof= regexr(cof, "c\.", "")
+			
+			//check if cof is equal to keepvars and include it in this_unique if it is
+			if(keepvars[1,i]==cof) this_unique= this_unique\unique[ii,1]
+		}
+	}
+	
+	return(this_unique)
 }
 
 real scalar getindex(string scalar val, string vector names) {
