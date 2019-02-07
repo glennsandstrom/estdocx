@@ -16,7 +16,7 @@
 	//capture program drop create_docx
 	program create_docx
 		version 15.1
-		syntax namelist(name=models), [title(string)] [landscape]
+		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
 		/**************************************************************************/
 		/** SET WIDTH OF THE TABLE                     **/
 		/**************************************************************************/
@@ -29,8 +29,8 @@
 		/**************************************************************************/
 			// clear any usaved documents from memory
 			putdocx clear
-			if "`landscape'"!="" putdocx begin, pagesize(A4) landscape
-			else putdocx begin, pagesize(A4)
+			if "`landscape'"!="" putdocx begin, pagesize(`pagesize') landscape
+			else putdocx begin, pagesize(`pagesize')
 			
 			putdocx paragraph, halign(left) spacing(after, 0) 
 			
@@ -210,20 +210,22 @@ program estimates_table_docx
 		[star(string)] ///
 		[baselevels] ///
 		[keep(string)] ///
+		[pagesize(string)] ///
 		[landscape]
 	
 	// set local holding the names of estimates to be reported in table
 	local models= "`namelist'" //space separated list of estimates
 	
-	// defualt significanse values if none are provided
+	// defualt values for options if none are provided
 	if ("`star'"=="") local star ".05 .01 .001"
 	if ("`saving'"=="") local saving "estimates_table.docx"
+	if ("`pagesize'"=="") local pagesize "A4"
 	
 	/**************************************************************************/
 	/** CREATE TABLE                     **/
 	/**************************************************************************/
 
-	create_docx `models', title(`title') `landscape'
+	create_docx `models', pagesize(`pagesize') title(`title') `landscape' 
 	//putdocx describe esttable
 	/**************************************************************************/
 	/** Get unique varlist from estimates for each of the specified models **/

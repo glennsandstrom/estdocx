@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.2.4 20190113 }{...}
-{right:version 1.2.4}
+{* *! version 1.2.5 20190207 }{...}
+{right:version 1.2.5}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
@@ -24,6 +24,7 @@ namelist
 {synopt:{opt star(numlist)}}Numlist of significanse levels. Default is .05 .01 .001.{p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
 {synopt:{opt keep(coflist)}}List of coifficent to indlude in table.{p_end}
+{synopt:{opt pagesize(psize)}}Set pagesize of Word document.{p_end}
 {synopt:{opt landscape}}Use landscape layout for worddocument.{p_end}
 {synoptline}
 {p2colreset}{...}
@@ -65,6 +66,9 @@ namelist
 {opt keep(coflist)} List of coifficent to indlude in table. Will present paramters in the specified order.
 Specify the the variables to be included as in estamation command but exclude level indicators.
 For Model 3 in examples you would specify age race collgrad wage grade tenure collgrad#race collgrad#tenure _cons
+
+{phang}
+{opt pagesize(psize)} Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Deafault is pagesize(A4)
 
 {phang}
 {opt landscape} Use landscape layout for worddocument.
