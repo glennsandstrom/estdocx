@@ -1,10 +1,10 @@
 {smcl}
-{* *! version 1.2.5 20190207 }{...}
-{right:version 1.2.5}
+{* *! version 1.2.6 20190207 }{...}
+{right:version 1.2.6}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
-but exports results directly to a Wordtable
+but exports results directly to a Word table
 
 {marker syntax}{...}
 {title:Syntax}
@@ -19,9 +19,10 @@ namelist
 {synoptline}
 {syntab:Main}
 {synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
-{synopt:{opt title(string)}} Optional title for table.{p_end}
+{synopt:{opt title(string)}}Optional title for table.{p_end}
 {synopt:{opt bdec(real)}}Number of decimal places used for paramaters. Default is .01{p_end}
 {synopt:{opt star(numlist)}}Numlist of significanse levels. Default is .05 .01 .001.{p_end}
+{synopt:{opt stats(scalarlist)}}Report scalarlist in table {p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
 {synopt:{opt keep(coflist)}}List of coifficent to indlude in table.{p_end}
 {synopt:{opt pagesize(psize)}}Set pagesize of Word document.{p_end}
@@ -40,7 +41,7 @@ namelist
  using the command putdocx Stata 15 (i.e. putdocx table results = etable) This method causes 
  unwanted formatting issues in the resulting table such as e.g. hidden characters in cells
  making it difficult to choose alignment in the cells and the need to erase these characters.
- estimates_table_docx avoid such issues and allowes some additonal benefits by providing 
+ estimates_table_docx avoid such issues and allow some additional benefits by providing 
  options for the formating of the resulting table and inclusion of legend etc.
 
 {marker options}{...}
@@ -60,18 +61,22 @@ namelist
 {opt star(numlist .05 .01 .001)} significanse levels.
 
 {phang}
+{opt stats(scalarlist)} List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
+Default behavior is to display N. If you do not want anything to be displayed at bottom of table specify stats(null).
+
+{phang}
 {opt baselevels} Include all baselevels in the resulting table.
 
 {phang}
-{opt keep(coflist)} List of coifficent to indlude in table. Will present paramters in the specified order.
-Specify the the variables to be included as in estamation command but exclude level indicators.
+{opt keep(coflist)} List of coefficient to include in table. Will present parameters in the specified order.
+Specify the the variables to be included as in estimation command but exclude level indicators.
 For Model 3 in examples you would specify age race collgrad wage grade tenure collgrad#race collgrad#tenure _cons
 
 {phang}
-{opt pagesize(psize)} Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Deafault is pagesize(A4)
+{opt pagesize(psize)} Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Default is pagesize(A4)
 
 {phang}
-{opt landscape} Use landscape layout for worddocument.
+{opt landscape} Use landscape layout for Word document.
 
 {marker examples}{...}
 {title:Examples}

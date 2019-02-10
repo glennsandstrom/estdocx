@@ -65,41 +65,45 @@
 	  
 		syntax namelist(min=1),	///
 		[keep(string)]
-			
+		
 		local models= "`namelist'" //space sparated list of estimates
 		
-			foreach model in `models' {
-				//get stored estimates
-				capture qui estimates replay `model'
-				if _rc==111 {
-					di _newline(3)  
-					di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
-					di _newline  
-					di as result "The estimates currently stored in memory are:" 
-					estimates dir
-					exit _rc
-				}
-
-				mat `model'= r(table)
-				
-				//transpose to get variables as rows
-				mat `model'= `model''
-				
-				//remove the equation-name
-				matrix roweq `model' = "" 
+		//loop over models to create table model_betas & model_p
+		foreach model in `models' {
 			
+			//get stored estimates for model
+			capture qui estimates replay `model'
+			
+			if _rc==111 {
+				di _newline(3)  
+				di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
+				di _newline  
+				di as result "The estimates currently stored in memory are:" 
+				estimates dir
+				exit _rc
 			}
 			
-			// call mata to form the matrix with model paramters
-			if("`keep'"=="") mata: models_varlist("`models'")
-			else mata: models_varlist("`models'", "`keep'")
+			mat `model'= r(table)
 			
-			mata: model_stats("`models'", "`modelvars'", "b pvalue")
+			//transpose to get variables as rows
+			mat `model'= `model''
 			
-			return local params "`modelvars'"
-			return scalar numparams= `numparams'
-			return matrix model_betas= model_betas
-			return matrix model_p= model_p
+			//remove the equation-name
+			matrix roweq `model' = ""
+			
+		}
+		
+		// call mata to form the matrix with model paramters
+		if("`keep'"=="") mata: models_varlist("`models'")
+		else mata: models_varlist("`models'", "`keep'")
+		
+		mata: model_beta_table("`models'", "`modelvars'", "b pvalue")
+		
+		return local params "`modelvars'"
+		return scalar numparams= `numparams'
+		return matrix model_betas= model_betas
+		return matrix model_p= model_p
+		
 	end
 	/*########################################################################*/
 	//capture program drop write_continious
@@ -119,7 +123,7 @@
 		// add row for _cons to table
 		putdocx table esttable(`row',.), addrows(1)
 		local row= `row'+1
-		putdocx table esttable(`row',1) = ("`varlabel'"), bold font(Garamond, 10) halign(left)
+		putdocx table esttable(`row',1) = ("`varlabel'"), bold font(Garamond, 11) halign(left)
 		
 		
 		//loop over models and write paramter for all models
@@ -128,7 +132,7 @@
 			local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
 			local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
 			mata: sig_param(`b', `p', "`star'", `bdec') // returns local param 
-			putdocx table esttable(`row',`col') = ("`param'"), halign(left) 
+			putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left) 
 			local ++col
 		}
 			
@@ -166,7 +170,7 @@
 				// returns local param => string with sig marker
 				mata: sig_param(`b', `p', "`star'", `bdec') 
 				
-				putdocx table esttable(`row',`col') = ("`param'"), halign(left)
+				putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left)
 				local ++col
 		}	
 	end
@@ -188,9 +192,130 @@
 		putdocx table esttable(`row',.), addrows(1)
 		local row= `row'+1
 		putdocx table esttable(`row',1) = ("`text'"), ///
-		font(Garamond, 10) halign(left) colspan(`col') ///
+		font(Garamond, 11) halign(left) colspan(`col') ///
 		border(bottom, nil) ///
 		border(top)
+	end
+	/*########################################################################*/	
+	program write_stats
+		version 15.1
+		syntax namelist(min=1), stats(string) row(integer)
+		//di "MODELS: `namelist'"
+		//di "STATS: `stats'"
+		//di "ROW: `row'"
+		
+		local models= "`namelist'" //space sparated list of estimates
+			
+		foreach stat in `stats' {
+			//add row for stat
+			putdocx table esttable(`row',.), addrows(1)
+			local ++row
+			putdocx table esttable(`row',1) = ("`stat'"), font(Garamond, 11) halign(left) bold
+			
+			// get matrix of stat for each model
+			get_`stat' `models'
+			matrix S= r(S)
+			local col= 2
+			
+			foreach mod in `models' {
+				if ("`stat'"!="N") local text: display %-9.1f S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+				else local text= S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+				putdocx table esttable(`row',`col') = ("`text'"), font(Garamond, 11) halign(left)				
+				local ++col
+			}
+		}		
+		
+	
+	end
+	/*########################################################################*/
+	program get_N, rclass
+		version 15.1
+		syntax namelist(min=1)
+		
+		local models= "`namelist'" //space sparated list of estimates
+		
+		//create a matrix for storing statistics
+		local nummods: list sizeof models
+		matrix Y= J(1,`nummods', .)
+		matrix colnames Y = `models'
+		matrix rownames Y = N
+		
+		//loop over models and get each statistic in stats and store in S
+		foreach model in `models' {
+			//restore model to acces e()
+			qui estimates restore `model'  
+			// store value of statistics specified in arg: stats in matrix S
+			mat Y[rownumb(Y,"N"),colnumb(Y,"`model'")]= e(N)			
+		}
+
+		return matrix S= Y
+	end
+	/*########################################################################*/
+	program get_aic, rclass
+		version 15.1
+		syntax namelist(min=1)
+		
+		local models= "`namelist'" //space sparated list of estimates
+		
+		//create a matrix for storing statistics
+		local nummods: list sizeof models
+		matrix Y= J(1,`nummods', .)
+		matrix colnames Y = `models'
+		matrix rownames Y = aic
+		
+		//loop over models and get each statistic in stats and store in S
+		foreach model in `models' {
+			//restore model to acces e()
+			qui estimates restore `model'  
+			qui estat ic
+			mat Z= r(S)
+			local val= Z[1 ,colnumb(Z,"AIC")]
+			mat Y[rownumb(Y,"aic"),colnumb(Y,"`model'")]= `val'			
+		}
+
+		return matrix S= Y
+	end
+	/*########################################################################*/
+	program get_bic, rclass
+		version 15.1
+		syntax namelist(min=1)
+		
+		local models= "`namelist'" //space sparated list of estimates
+		
+		//create a matrix for storing statistics
+		local nummods: list sizeof models
+		matrix Y= J(1,`nummods', .)
+		matrix colnames Y = `models'
+		matrix rownames Y = bic
+		
+		//loop over models and get each statistic in stats and store in S
+		foreach model in `models' {
+			//restore model to acces e()
+			qui estimates restore `model'  
+			qui estat ic
+			mat Z= r(S)
+			local val= Z[1 ,colnumb(Z,"BIC")]
+			mat Y[rownumb(Y,"bic"),colnumb(Y,"`model'")]= `val'			
+		}
+
+		return matrix S= Y
+	end
+	/*########################################################################*/
+	program check_stats
+		version 15.1
+		syntax anything(name=statlist id="Statistics"), allowed(string)
+		
+		foreach stat in `statlist' {
+			// get postion of stat in list of allowed statistics
+			local i : list posof "`stat'" in allowed
+			if(!`i') {
+				di _newline(3)  
+				di as error "ERROR: `stat' is not an allowed statistic in option stats()"
+				di _newline  
+				error 197
+			
+			}
+		}
 	end
 	/*########################################################################*/
 	
@@ -208,29 +333,38 @@ program estimates_table_docx
 		[title(string)] ///
 		[bdec(real .01)] ///
 		[star(string)] ///
+		[stats(string)] ///
 		[baselevels] ///
 		[keep(string)] ///
 		[pagesize(string)] ///
 		[landscape]
-	
+
+
 	// set local holding the names of estimates to be reported in table
 	local models= "`namelist'" //space separated list of estimates
 	
-	// defualt values for options if none are provided
+	// set local holding list of allowed statistics
+	local allowed "none N aic bic"
+	
+	// default values for options if none are provided
 	if ("`star'"=="") local star ".05 .01 .001"
 	if ("`saving'"=="") local saving "estimates_table.docx"
 	if ("`pagesize'"=="") local pagesize "A4"
 	
+	// if stats is provided check that all stats are allowed/implemented
+	if ("`stats'"!="") check_stats `stats', allowed(`allowed')
+	if ("`stats'"=="") local stats "N" // set default stat N if stats is not provided
+	if ("`stats'"=="none") local stats "" // set stat null string if stat(none)
+	
 	/**************************************************************************/
 	/** CREATE TABLE                     **/
 	/**************************************************************************/
-
 	create_docx `models', pagesize(`pagesize') title(`title') `landscape' 
 	//putdocx describe esttable
 	/**************************************************************************/
 	/** Get unique varlist from estimates for each of the specified models **/
 	/**************************************************************************/
-	if("`keep'"=="") get_models `models' 
+	if("`keep'"=="") get_models `models'
 	else get_models `models', keep(`keep')
 	// returns 
 	// 1. r(params)= MACRO STRING nicley formated list of unique paramters making 
@@ -289,13 +423,20 @@ program estimates_table_docx
 	local ++betarow
 	}
 	
-	// set border on bottom of header row
+	// set border on bottom of header row of table
 	putdocx table esttable(1,.), border(bottom)
+	// set border at bottom beta table
+	putdocx table esttable(`row',.), border(bottom)
 	
+	/**************************************************************************/	
+	// ADD STATS TO BOTTOM OF TABLE IF stats!=null
+	/**************************************************************************/
+	if ("`stats'"!="") write_stats `models', stats(`stats') row(`row')
+	/**************************************************************************/	
 	// print a legend with significance values
-	local c: word count `models'
-	local ++c
-	write_legend, star(`star') row(`row') col(`c')
+	/**************************************************************************/
+	qui putdocx describe esttable
+	write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
 	/**************************************************************************/
 	/** Save worddocument             **/
 	/**************************************************************************/
@@ -326,7 +467,7 @@ struct paratype {
 
 }
 /*###############################################################################################*/
-// FUCNTIONS
+// FUNCTIONS
 /*###############################################################################################*/
 void sig_param(real scalar param, real scalar sig, string scalar star, real scalar fmt) {
 	string scalar parameter, text
@@ -362,7 +503,7 @@ void sig_param(real scalar param, real scalar sig, string scalar star, real scal
 	
 }
 
-void model_stats(string scalar models, string scalar varlist, string scalar stats){
+void model_beta_table(string scalar models, string scalar varlist, string scalar stats){
 	string scalar model, param
 	string vector this_models, this_varlist, this_stats, rownames, colnames
 	real scalar a, b, c, nummodels, rowvarlist, rowmodel, col, mlenth, rowsum
@@ -505,8 +646,8 @@ void models_varlist(string scalar models, |string scalar cofkeep){
 	//printf("{txt}Content of pramaters is {res}%s\n", paramaters)
 	
 	//IMPLEMENT KEEP OPTION HERE
-		// function taking colvector unique as argument and returning sorted and
-		// constrained version using string scalar cofkeep as selection criteria
+	// function taking colvector unique as argument and returning sorted and
+	// constrained version using string scalar cofkeep as selection criteria
 	if(args()==2) unique= keeping(unique, cofkeep)
 	
 	st_local("modelvars", invtokens(unique'))
