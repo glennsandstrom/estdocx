@@ -108,7 +108,7 @@ estimates store _3_
 ```
 Run command to produce table in Word document estimates_table.docx
 ```stata
-estimates_table_docx _1_ _2_ _3_ , star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels
+estimates_table_docx _1_ _2_ _3_ , star(.05 .01 .001) b(%9.2f) title("Table 1: Test title") baselevels
 ```
 
 Author
