@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.2.6 20190207 }{...}
+{* *! version 1.2.6 20190211 }{...}
 {right:version 1.2.6}
 {title:Title}
 {phang}
@@ -20,9 +20,9 @@ namelist
 {syntab:Main}
 {synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
 {synopt:{opt title(string)}}Optional title for table.{p_end}
-{synopt:{opt bdec(real)}}Number of decimal places used for paramaters. Default is .01{p_end}
+{synopt:{opt b(%fmt)}}Stata format used for coifficents. Default is %9.2f{p_end}
 {synopt:{opt star(numlist)}}Numlist of significanse levels. Default is .05 .01 .001.{p_end}
-{synopt:{opt stats(scalarlist)}}Report scalarlist in table {p_end}
+{synopt:{opt stats(scalarlist)}}Report scalarlist in table. Allowed is N aic bic {p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
 {synopt:{opt keep(coflist)}}List of coifficent to indlude in table.{p_end}
 {synopt:{opt pagesize(psize)}}Set pagesize of Word document.{p_end}
@@ -55,14 +55,14 @@ namelist
 {opt title(string)} Optional title for table.
 
 {phang}
-{opt bdec(real .01)} Number of decimal places used for paramaters. Default is .01
+{opt b(%fmt)} Specifies how the coefficients are to be displayed. Default is %9.2f
 
 {phang}
 {opt star(numlist .05 .01 .001)} significanse levels.
 
 {phang}
 {opt stats(scalarlist)} List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
-Default behavior is to display N. If you do not want anything to be displayed at bottom of table specify stats(null).
+Default behavior is to display N. If you do not want anything to be displayed at bottom of table specify stats(none).
 
 {phang}
 {opt baselevels} Include all baselevels in the resulting table.

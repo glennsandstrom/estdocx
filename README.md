@@ -57,8 +57,9 @@ Options           | Description
 ----------------- | -------------
 saving(filename)  |  Path/filename of the generated docx file.
 title(string)     |  Optional title for table.
-bdec(real)        |  Number of decimal places used for parameters. Default is .01
+b(%fmt)           |  Stata format used for coifficents. Default is %9.2f
 star(numlist)     |  Numlist of significance levels. Default is .05 .01 .001.
+stats(scalarlist) |  List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
 baselevels        |  Include all baselevels.
 keep(coflist)     |  List of coifficent to indlude in table.
 landscape         |  Use landscape layout for Word document.

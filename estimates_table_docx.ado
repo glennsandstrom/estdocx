@@ -113,7 +113,7 @@
 		row(integer) ///
 		var(string) ///
 		varlabel(string) ///
-		bdec(real) ///
+		fmt(string) ///
 		star(string)
 			
 		local models= "`namelist'" //space sparated list of estimates
@@ -131,7 +131,7 @@
 		foreach model of local models {
 			local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
 			local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
-			mata: sig_param(`b', `p', "`star'", `bdec') // returns local param 
+			mata: sig_param(`b', `p', "`star'", "`fmt'") // returns local param 
 			putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left) 
 			local ++col
 		}
@@ -145,7 +145,7 @@
 		row(integer) ///
 		var(string) ///
 		vlab(string) ///
-		bdec(real) ///
+		fmt(string) ///
 		star(string)
 			
 		local models= "`namelist'" //space sparated list of estimates
@@ -168,7 +168,7 @@
 				local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
 				
 				// returns local param => string with sig marker
-				mata: sig_param(`b', `p', "`star'", `bdec') 
+				mata: sig_param(`b', `p', "`star'", "`fmt'") 
 				
 				putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left)
 				local ++col
@@ -218,8 +218,13 @@
 			local col= 2
 			
 			foreach mod in `models' {
-				if ("`stat'"!="N") local text: display %-9.1f S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
-				else local text= S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+				if ("`stat'"!="N") {
+					local text: display %-9.1f S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+					local text= subinstr("`text'"," ","", .)
+				}
+				else {
+					local text= S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+				}
 				putdocx table esttable(`row',`col') = ("`text'"), font(Garamond, 11) halign(left)				
 				local ++col
 			}
@@ -331,7 +336,7 @@ program estimates_table_docx
 	syntax namelist(min=1),	///
 		[saving(string)] ///
 		[title(string)] ///
-		[bdec(real .01)] ///
+		[b(string)] ///
 		[star(string)] ///
 		[stats(string)] ///
 		[baselevels] ///
@@ -348,6 +353,7 @@ program estimates_table_docx
 	
 	// default values for options if none are provided
 	if ("`star'"=="") local star ".05 .01 .001"
+	if ("`b'"=="") local b "%04.2f"
 	if ("`saving'"=="") local saving "estimates_table.docx"
 	if ("`pagesize'"=="") local pagesize "A4"
 	
@@ -405,13 +411,13 @@ program estimates_table_docx
 				}
 				
 				// print row with parameters for all the models
-				write_level `models', row(`row') var(`var') vlab(`vlab') bdec(`bdec') star("`star'")
+				write_level `models', row(`row') var(`var') vlab(`vlab') fmt(`b') star("`star'")
 				local ++row
 			}
 		} 
 		else if "`paramtype'"=="continious" | "`paramtype'"=="c#c" | "`paramtype'"=="constant" {
 		
-			write_continious `models', row(`row') var(`var') varlabel(`label') bdec(`bdec') star("`star'")
+			write_continious `models', row(`row') var(`var') varlabel(`label') fmt(`b') star("`star'")
 			local ++row
 			local printed "`printed' `lab'"
 				
@@ -469,7 +475,7 @@ struct paratype {
 /*###############################################################################################*/
 // FUNCTIONS
 /*###############################################################################################*/
-void sig_param(real scalar param, real scalar sig, string scalar star, real scalar fmt) {
+void sig_param(real scalar param, real scalar sig, string scalar star, string scalar fmt) {
 	string scalar parameter, text
 	real matrix this_star
 	real scalar i, level
@@ -492,7 +498,7 @@ void sig_param(real scalar param, real scalar sig, string scalar star, real scal
 		parameter= "(base)"
 	}
 	else {
-		parameter= subinstr(strofreal(round(param, fmt))," ","")
+		parameter= subinstr(strofreal(param, fmt) ," ","")
 		for(i=1; i<=cols(this_star); i++) {
 			if  (sig < this_star[i]) parameter= parameter + "*"
 		
