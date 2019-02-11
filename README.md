@@ -92,7 +92,7 @@ estimates store _1_
 ```
 Run second model
 ```stata
-logistic never_married c.age i.race i.collgrad c.wage c.grade(reg)
+logistic never_married c.age i.race i.collgrad c.wage c.grade
 ```
 Store second model using estimates
 ```stata
