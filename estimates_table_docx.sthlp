@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.2.6 20190211 }{...}
-{right:version 1.2.6}
+{* *! version 1.2.7 20190920 }{...}
+{right:version 1.2.7}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
@@ -104,7 +104,7 @@ For Model 3 in examples you would specify age race collgrad wage grade tenure co
 {phang2}{cmd:. estimates store _3_}
 
 {pstd}Run command to produce table in Word document estimates_table.docx{p_end}
-{phang2}{cmd:. estimates_table_docx base grade tenure, star(.05 .01 .001) bdec(.001) title("Table 1: Test title") baselevels}
+{phang2}{cmd:. estimates_table_docx base grade tenure, star(.05 .01 .001) b(.001) title("Table 1: Test title") baselevels}
     {hline}
 
 
