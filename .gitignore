@@ -1,5 +1,9 @@
+#git ignore file
+
 *.docx
 
 test_estimates_table_docx.do
+
 test2_estimates_table_docx.do
+
 test_cox.do

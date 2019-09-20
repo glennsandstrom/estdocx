@@ -1,6 +1,10 @@
 /**************************************************************************/
 /**TODO  **/
 /**************************************************************************/
+// * BUG:if a varaible has no valuelables program ends in Error st_vlmap():  3300  argument out of range
+// * BUG: if factor has more than single digit level program trows error
+//   for smoe reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
+//   Temporarly I comment this out but need to ffigure out why i did this in the first place
 // * Implement a keep(coeflist) option and report coefficients in order specified
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
@@ -791,8 +795,8 @@ void paramtype(string scalar param) {
 				P.level= subinstr(P.level, "b", "")
 				P.level= subinstr(P.level, "o", "")
 				
-				// throw error if P.level is more than 1 character in lenght
-				if (strlen(P.level) > 1) _error(3300, "Level of factor has an non implmented value")
+				// throw error if P.level is more than 1 character in lenght WHY DID I THIS??
+				// if (strlen(P.level) > 1) _error(3300, "Level of factor has an non implmented value")
 								
 				// returns the value-label name associated with var, such as "origin", or it returns "" if var has no
 				// value label.  st_varvaluelabel(var, labelname) changes the value-label name associated with var.
