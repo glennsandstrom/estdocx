@@ -14,7 +14,12 @@
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
 //
-// * Implement higher order interactions than 2-way
+// * Implement higher order interactions than 2-way.... Simplify the functions paramtype
+//   Only needs to return factor, factor-interaction (includes factor#continious), 
+//   continious (includes constants, continious-interactions)
+//	 Goal is to simplifiy the forming of rowlabels for differnt types of intercations
+//   and to handle situations when there are either no label or no value-labels
+//   assossiated to one or more variables/levels in the paramteter that forms the row of the table
 //
 // * Handle stratified variables in cox-regressions
 // 
@@ -103,7 +108,7 @@
 			
 		}
 		
-		// call mata to form the matrix with model paramters
+		// call mata to form the matrix with model parameters
 		if("`keep'"=="") mata: models_varlist("`models'")
 		else mata: models_varlist("`models'", "`keep'")
 		
@@ -395,6 +400,9 @@ program estimates_table_docx
 	local row= 1
 	local betarow= 1
 	local rows: rowsof r(model_betas) // rows of full table
+	// Here I fetch the full rowvarlist for the complete table ex.
+	// 1bn.race 2.race 3.race age 0bn.collgrad 1.collgrad that I loop over
+	// and print each paramter/row of the full table
 	local varlist: rowvarlist r(model_betas)
 	
 	foreach var in `varlist' {
@@ -402,8 +410,14 @@ program estimates_table_docx
 		/**************************************************************************/	
 		// Check the type of the parameter 1. CONTINIOUS/CONS 2. FACTOR 3.INTERACTION 
 		/**************************************************************************/
+		// get the type of paramter and the full label and value label to print
+		// in the row, differntiate between base levels and parmaters that are not 1|0
+		// thge function paramtype should be simplified and be able to handle
+		// an arbitrary number of varaibles in an interaction.....
 		mata: paramtype("`var'") //returns locals: paramtype, label, vlab
 		
+		// print paratmters that are facors or intercations incuding factors that have 
+		// more than one level
 		if "`paramtype'"=="factor" | "`paramtype'"=="f#f" | "`paramtype'"=="c#f"{
 			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
 			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
@@ -411,7 +425,7 @@ program estimates_table_docx
 				local lab= subinstr("`label'", " ", "", .) //remove all whitespace
 				
 				local print : list posof "`lab'" in printed
-				//header row with variable label for factor has not been printed => add header row
+				//add a header row with variable label for factor variables that has been added tothe table
 				if !`print' {
 					// add header row with varname of factor variable
 					putdocx table esttable(`row',.), addrows(1)
@@ -420,7 +434,7 @@ program estimates_table_docx
 					local printed "`printed' `lab'" //add varname to list of printed headers
 				}
 				
-				// print row with parameters for all the models
+				// print row with parameters 
 				write_level `models', row(`row') var(`var') vlab(`vlab') fmt(`b') star("`star'")
 				local ++row
 			}
@@ -740,6 +754,7 @@ void interaction_type(struct paratype scalar P) {
 	if (length(P.intervars) > 2) _error("Program estimates_table_docx does not support more than 2-way interactions")
 	
 	levels= J(cols(P.intervars), 1 , "")
+	
 	//determine type of interaction
 	for(i=1; i<=cols(P.intervars); i++) {
 		P.level= substr(P.intervars[i] , 1 , strrpos(P.intervars[i],".")-1 )
@@ -754,6 +769,7 @@ void interaction_type(struct paratype scalar P) {
 	
 	//form the interaction type and store in P.interaction
 	levels= levels'
+	//levels
 	for(i=1; i<=cols(P.intervars); i++) {
 		if (i < cols(P.intervars)) P.paramtype= P.paramtype + levels[i] + "#"
 		else P.paramtype= P.paramtype + levels[i]
@@ -771,14 +787,15 @@ void paramtype(string scalar param) {
 	real scalar i
 	struct paratype scalar P
 	P.param= param
-	
 	//replace all occurences of bn in the levels
 	P.param= subinstr(P.param, "bn.", ".") 
 	
 	//check if parameter is an interaction
 	P.interaction= strrpos(P.param,"#") // if param contains # it´s an interaction
+	// code from here should form the combinaton of all the varnames concateneded into
+	// P.label AND all value lables concatened into P.vlab if it is an intercation
+	// P. paramtype should be factor, factor-int, continious, contionious-int
 	
-	//tokenise into string matrix holding each varname if it is an interaction
 	if(P.interaction) { 
 		
 		interaction_type(P)	
@@ -842,9 +859,13 @@ void paramtype(string scalar param) {
 			// check that a varlabel is set else return varname in P.label
 			if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
 			else P.label= P.varname
-			// check that valuelbels are set else return P.level in P.vlab 
+			
+			// check that value labels are set and set vlab to correct value label in P.vlab 
 			if (st_varvaluelabel(P.varname)!="") P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
 			else P.vlab = P.level
+			
+			// sometimes the value lable is set but is null string => set to level of factor
+			if (P.vlab=="") P.vlab = P.level
 
 		}
 		else {
