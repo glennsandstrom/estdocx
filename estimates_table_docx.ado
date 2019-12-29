@@ -1,18 +1,24 @@
 /**************************************************************************/
 /**TODO  **/
 /**************************************************************************/
+// * DONE:Implement a keep(coeflist) option and report coefficients in order specified
+//
+//
+//
 // * BUG:if a varaible has no valuelables program ends in Error st_vlmap():  3300  argument out of range
 // * BUG: if factor has more than single digit level program trows error
 //   for smoe reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
-//   Temporarly I comment this out but need to ffigure out why i did this in the first place
-// * Implement a keep(coeflist) option and report coefficients in order specified
+//   Temporarly I comment this out but need to figure out why i did this in the first place
+//
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
 //
 // * Implement higher order interactions than 2-way
 //
-// * Implement option to include AIC, BIC, linktest etc. 
+// * Handle stratified variables in cox-regressions
+// 
+// * Implment option to set the titles of models
 /**************************************************************************/
 /**SUB-ROUTINES  **/
 /**************************************************************************/
