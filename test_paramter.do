@@ -59,92 +59,142 @@ void test(){
 	// test some common single variable paramter types
 	/******************************************************************************/
 	P.setup("bn1.race")
-	P.print()
+	//P.print()
 	
+	assert(P.vars[1].vartype=="factor")
+	assert(P.vars[1].prefix== "bn1")
+	assert(P.vars[1].level== "1")
+	assert(P.vars[1].base)
+	assert(P.vars[1].varname== "race")
+	assert(P.vars[1].label=="Etnicity")
+	assert(P.vars[1].vlab=="white")
+	
+	assert(P.paramtxt=="bn1.race")
 	assert(P.paramtype=="factor")
-	assert(P.prefix== "bn1")
-	assert(P.level== "1")
-	assert(P.base)
-	assert(P.varname== "race")
-	assert(P.label=="Etnicity")
-	assert(P.vlab=="white")
-	assert(!P.interaction)
+	assert(P.comblabel=="Etnicity")
+	assert(P.combvlab=="white")
+ 	assert(!P.interaction)
+	
+	P.setup("2b.race")
+	//P.print()
+	
+	assert(P.vars[1].vartype=="factor")
+	assert(P.vars[1].prefix== "2b")
+	assert(P.vars[1].level== "2")
+	assert(P.vars[1].base)
+	assert(P.vars[1].varname== "race")
+	assert(P.vars[1].label=="Etnicity")
+	assert(P.vars[1].vlab=="black")
+	
+	assert(P.paramtxt=="2b.race")
+	assert(P.paramtype=="factor")
+	assert(P.comblabel=="Etnicity")
+	assert(P.combvlab=="black")
+ 	assert(!P.interaction)
 	
 	P.setup("age")
 	//P.print()
 	
 	assert(P.paramtype=="continious")
-	assert(P.prefix== "")
-	assert(P.level== "")
-	assert(!P.base)
-	assert(!P.omitted)
-	assert(P.varname== "age")
-	assert(P.label=="age in current year")
-	assert(!P.interaction)
-	assert(P.vlab=="")
+	assert(P.vars[1].prefix== "")
+	assert(P.vars[1].level== "")
+ 	assert(!P.vars[1].base)
+ 	assert(!P.vars[1].omitted)
+ 	assert(P.vars[1].varname== "age")
+ 	assert(P.vars[1].label=="age in current year")
+	assert(P.vars[1].vlab=="")
 	
+	assert(P.paramtxt=="age")
+	assert(P.paramtype=="continious")
+	assert(P.comblabel=="age in current year")
+	assert(P.combvlab=="")
+ 	assert(!P.interaction)
 	
 	P.setup("c.age")
 	//P.print()
 	
 	assert(P.paramtype=="continious")
-	assert(P.prefix== "c")
-	assert(P.varname== "age")
-	assert(P.label=="age in current year")
-	assert(!P.base)
-	assert(!P.omitted)
-	assert(!P.interaction)
-	assert(P.vlab=="")
+	assert(P.vars[1].prefix== "c")
+	assert(P.vars[1].level== "")
+ 	assert(!P.vars[1].base)
+ 	assert(!P.vars[1].omitted)
+ 	assert(P.vars[1].varname== "age")
+ 	assert(P.vars[1].label=="age in current year")
+	assert(P.vars[1].vlab=="")
+	
+	assert(P.paramtxt=="c.age")
+	assert(P.paramtype=="continious")
+	assert(P.comblabel=="age in current year")
+	assert(P.combvlab=="")
+ 	assert(!P.interaction)
 	
 	P.setup("co.wage")
-	P.print()
+	//P.print()
 	
 	assert(P.paramtype=="continious")
-	assert(P.prefix== "co")
-	assert(!P.base)
-	assert(P.omitted)
-	assert(P.varname== "wage")
-	assert(P.label=="hourly wage")
-	assert(!P.interaction)
-	assert(P.vlab=="")
+	assert(P.vars[1].prefix== "co")
+	assert(P.vars[1].level== "")
+ 	assert(!P.vars[1].base)
+ 	assert(P.vars[1].omitted)
+ 	assert(P.vars[1].varname== "wage")
+ 	assert(P.vars[1].label=="hourly wage")
+	assert(P.vars[1].vlab=="")
 	
+	assert(P.paramtxt=="co.wage")
+	assert(P.paramtype=="continious")
+	assert(P.comblabel=="hourly wage")
+	assert(P.combvlab=="")
+ 	assert(!P.interaction)
+ 	
 	/******************************************************************************/
 	// test single paramters that has no label or value-labels set or both
 	/******************************************************************************/
 	// continuious omitted variable with no label
 	P.setup("co.tenure")
-	P.print()
+	//P.print()
 	
 	assert(P.paramtype=="continious")
-	assert(P.prefix== "co")
-	assert(!P.base)
-	assert(P.omitted)
-	assert(P.varname== "tenure")
-	assert(P.label=="tenure")
-	assert(!P.interaction)
-	assert(P.vlab=="")
+	assert(P.vars[1].prefix== "co")
+	assert(P.vars[1].level== "")
+ 	assert(!P.vars[1].base)
+ 	assert(P.vars[1].omitted)
+ 	assert(P.vars[1].varname== "tenure")
+ 	assert(P.vars[1].label=="tenure")
+	assert(P.vars[1].vlab=="")
+	
+	assert(P.paramtxt=="co.tenure")
+	assert(P.paramtype=="continious")
+	assert(P.comblabel=="tenure")
+	assert(P.combvlab=="")
+ 	assert(!P.interaction)
 	
 	// factor with no value-label
 	P.setup("11b.married")
 	P.print()
 	
 	assert(P.paramtype=="factor")
-	assert(P.prefix== "11b")
-	assert(P.level== "11")
-	assert(P.base)
-	assert(P.varname== "married")
-	assert(P.label=="married")
-	assert(P.vlab=="11")
-	assert(!P.interaction)
+	assert(P.vars[1].prefix== "11b")
+	assert(P.vars[1].level== "11")
+ 	assert(P.vars[1].base)
+ 	assert(!P.vars[1].omitted)
+ 	assert(P.vars[1].varname== "married")
+ 	assert(P.vars[1].label=="married")
+	assert(P.vars[1].vlab=="11")
+	
+	assert(P.paramtxt=="11b.married")
+	assert(P.paramtype=="factor")
+	assert(P.comblabel=="married")
+	assert(P.combvlab=="11")
+ 	assert(!P.interaction)
 	
 	/******************************************************************************/
 	// Interactions
 	/******************************************************************************/
-	
+	/*
 		// factor with no value-label
 	P.setup("0.collgrad#3.race")
 	P.print()
-
+	*/
 	
 	
 	

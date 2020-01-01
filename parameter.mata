@@ -4,30 +4,42 @@ mata: mata set matalnum on
 
 mata:
 
-class parameter {
-	public:
-		string scalar paramtype
+struct paramvar {
+		string scalar vartype
+		string scalar varname
 		string scalar label 
 		string scalar vlab
-		
-		void setup()
-		void print()
-	
-	
-		string scalar paramtxt
-		real scalar interaction					
-		string scalar varname
 		string scalar prefix		//entire string before . in paramtxt
 		string scalar level			
 		real scalar base
 		real scalar omitted
-		string matrix intervars	
+
+
+}
+
+class parameter {
+	public:
+		string scalar paramtype
+		string scalar comblabel 
+		string scalar combvlab
+		
+		string scalar paramtxt
+		real scalar interaction
+		string matrix intervars
+		
+		struct paramvar rowvector vars //vector of different variables forming the parameter
+				
+		void setup()
+		void print()
+		struct paramvar parsevar()
+	
+	
+		
 }
 
 void parameter::setup(string scalar user_txt) {
 	//make sure all propretis are null when setup is run
-	this.paramtype = this.label = this.label = this.vlab = this.varname = this.prefix = this.level = ""
-	this.base = this.omitted =.
+	this.vars = J(0,0, this.vars)
 	
 	this.paramtxt= user_txt // text defining the complete paramteter
 	
@@ -35,50 +47,66 @@ void parameter::setup(string scalar user_txt) {
 	this.interaction= strrpos(this.paramtxt,"#")
 	
 	if (this.interaction) {
-		"do complicated things for interaction paramters"
+		//"do complicated things for interaction paramters"
 		this.intervars=tokens(subinstr(this.paramtxt, "#", " ") ) //matrix with varnames forming the interaction
+		// fill colvector this.vars with strcutures for each varaible in interaction stored in intervars
+		
 	}
 	else {
-		"do easy things for factors and continious variables"
-		// assign the part of the string efter . to this.varname 
-		this.varname= substr(this.paramtxt , strrpos(this.paramtxt,".")+1 ,  strlen(this.paramtxt))
+		//"do easy things for factors and continious variables"
+		//create a single element vector with one paramvar structure
+		this.vars= this.parsevar(this.paramtxt)
+		this.comblabel= this.vars[1].label
+		this.combvlab= this.vars[1].vlab
+		this.paramtype= this.vars[1].vartype
+		//liststruct(this.vars[1])
 		
-		// assignpart of string before . to this.prefix
-		this.prefix= substr(this.paramtxt , 1 , strrpos(this.paramtxt,".")-1 )
+	
+	}
+}
+
+struct paramvar parameter::parsevar(string scalar vartext){
+		struct paramvar scalar P
+		
+		
+		// assign the part of the string efter . to P.varname 
+		P.varname= substr(vartext , strrpos(vartext,".")+1 ,  strlen(vartext))
+		
+		// assign part of string before . to P.prefix
+		P.prefix= substr(vartext , 1 , strrpos(vartext,".")-1 )
 		
 		//check if prefix contains numeric character then it is a factor
-		if (regexm(this.prefix, "[0-9]")) {
+		if (regexm(P.prefix, "[0-9]")) {
 			
-			this.paramtype= "factor"
+			P.vartype= "factor"
 			
 			// check if prefix is base
-			this.base= strrpos(this.prefix,"b")  > 0
+			P.base= strrpos(P.prefix,"b")  > 0
 			
 			// check if prefix is ommitted
-			this.omitted= strrpos(this.prefix,"o")  > 0
-			
+			P.omitted= strrpos(P.prefix,"o")  > 0
+
 			//get only the numeric value in prefix if it contains letters to get valuelabel with st_varvaluelabel()
 			// match the numbers with regexm and tehn return them with regexs
-			regexm(this.prefix, "[0-9]+") 
-this.level= regexs()
-	
+			if (regexm(P.prefix, "[0-9]+"))	P.level= regexs(0)
+		
 			
-			// check that value labels are set and set vlab to correct value label in this.vlab 
-			if (st_varvaluelabel(this.varname)!="") this.vlab = st_vlmap(st_varvaluelabel(this.varname), strtoreal(this.level))
-			else this.vlab = this.level
+			// check that value labels are set and set vlab to correct value label in P.vlab 
+			if (st_varvaluelabel(P.varname)!="") P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
+			else P.vlab = P.level
 			
 			// sometimes the value lable is set but is null string => set to level of factor
-			if (this.vlab=="") this.vlab = this.level
+			if (P.vlab=="") P.vlab = P.level
 		}
-		else if (this.prefix=="" | this.prefix=="c" | this.prefix=="co") {
-			this.vlab= "" // paramter is not factor vlab should be null
-			this.paramtype= "continious"
+		else if (P.prefix=="" | P.prefix=="c" | P.prefix=="co") {
+			P.vlab= "" // paramter is not factor vlab should be null
+			P.vartype= "continious"
 			
 			//contionios variables haver no base-level
-			this.base= 0
+			P.base= 0
 			
 			// check if paramter is omitted 
-			this.omitted= strrpos(this.prefix,"o") > 0
+			P.omitted= strrpos(P.prefix,"o") > 0
 		
 		}
 		else {
@@ -86,29 +114,36 @@ this.level= regexs()
 		}
 		
 		// check that a varlabel is set else return varname in P.label
-		if (st_varlabel(this.varname)!="") this.label= st_varlabel(this.varname)
-		else this.label= this.varname
+		if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
+		else P.label= P.varname
 		
-
-		
-	
-	}
+		return(P)
 }
 
 void parameter::print() {
-	printf("{txt}--------------------------------------------------\n")
-	printf("{txt}paramtxt is:{result} %s\n", this.paramtxt)
-	printf("{txt}varname is:{result} %s\n", this.varname)
-	printf("{txt}prefix is:{result} %s\n", this.prefix)
-	printf("{txt}level is:{result} %s\n", this.level)
-	printf("{txt}base is:{result} %f\n", this.base)
-	printf("{txt}omitted is:{result} %f\n", this.omitted)
-	printf("{txt}interaction is:{result} %f\n", this.interaction)
-	this.intervars
-	printf("{txt}label is:{result} %s\n", this.label)
-	printf("{txt}vlab is:{result} %s\n", this.vlab)
-	printf("{txt}paramtype is:{result} %s\n", this.paramtype)
-	printf("{txt}--------------------------------------------------\n")
+	real scalar i
+		printf("{txt}___________________________________________________________\n")
+	for(i=1; i<=rows(this.vars); i++) {
+		
+		
+		printf("{txt}---Structure: %f ---------------------------------\n", i)
+		printf("{txt}vartype is:{result} %s\n", this.vars[i].vartype)
+		printf("{txt}varname is:{result} %s\n", this.vars[i].varname)
+		printf("{txt}label is:{result} %s\n", this.vars[i].label)
+		printf("{txt}vlab is:{result} %s\n", this.vars[i].vlab)
+		printf("{txt}prefix is:{result} %s\n", this.vars[i].prefix)
+		printf("{txt}level is:{result} %s\n", this.vars[i].level)
+		printf("{txt}base is:{result} %f\n", this.vars[i].base)
+		printf("{txt}omitted is:{result} %f\n", this.vars[i].omitted)
+	}
+
+		printf("{txt}--- Object: --------------------------------------\n")
+		printf("{txt}paramtxt is:{result} %s\n", this.paramtxt)
+		printf("{txt}paramtype is:{result} %s\n", this.paramtype)
+		printf("{txt}comblabel is:{result} %s\n", this.comblabel)
+		printf("{txt}combvlab is:{result} %s\n", this.combvlab)
+		printf("{txt}interaction is:{result} %f\n", this.interaction)
+		printf("{txt}___________________________________________________________\n")
 }
 
 end
