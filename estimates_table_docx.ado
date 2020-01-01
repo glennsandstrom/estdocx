@@ -416,8 +416,8 @@ program estimates_table_docx
 		// an arbitrary number of varaibles in an interaction.....
 		mata: paramtype("`var'") //returns locals: paramtype, label, vlab
 		
-		// print paratmters that are facors or intercations incuding factors that have 
-		// more than one level
+		// print paratmters that are facors or intercations including factors that have 
+		// more than one level....HERE paramtype should return factor/factor-interaction
 		if "`paramtype'"=="factor" | "`paramtype'"=="f#f" | "`paramtype'"=="c#f"{
 			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
 			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
@@ -438,7 +438,8 @@ program estimates_table_docx
 				write_level `models', row(`row') var(`var') vlab(`vlab') fmt(`b') star("`star'")
 				local ++row
 			}
-		} 
+		}
+		// here paramtype should return continious
 		else if "`paramtype'"=="continious" | "`paramtype'"=="c#c" | "`paramtype'"=="constant" {
 		
 			write_continious `models', row(`row') var(`var') varlabel(`label') fmt(`b') star("`star'")
@@ -496,6 +497,11 @@ struct paratype {
 	string matrix intervars					// private
 
 }
+/*###############################################################################################*/
+// CLASSES
+/*###############################################################################################*/
+
+
 /*###############################################################################################*/
 // FUNCTIONS
 /*###############################################################################################*/
