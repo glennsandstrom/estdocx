@@ -31,7 +31,7 @@
 
 sysuse nlsw88, clear
 notes
-label variable race "Etnicity"
+
 
 logit never_married c.age i.race b1.collgrad i.union c.wage c.grade c.tenure collgrad#race b1.collgrad#c.tenure
 	mat M= r(table)
@@ -47,17 +47,23 @@ logit never_married c.age i.race b1.collgrad i.union c.wage c.grade c.tenure col
 /** LOAD PROGRAM                                                            **/
 /******************************************************************************/
 do parameter.mata
+label variable race "Etnicity"
+label variable tenure ""
+label values married .
 
 mata:
 
 void test(){
 	class parameter scalar P
-
+	/******************************************************************************/
+	// test some common single variable paramter types
+	/******************************************************************************/
 	P.setup("bn1.race")
 	P.print()
 	
-	assert(P.level== "bn1")
-	assert(P.leveli== "1")
+	assert(P.paramtype=="factor")
+	assert(P.prefix== "bn1")
+	assert(P.level== "1")
 	assert(P.base)
 	assert(P.varname== "race")
 	assert(P.label=="Etnicity")
@@ -67,8 +73,9 @@ void test(){
 	P.setup("age")
 	//P.print()
 	
+	assert(P.paramtype=="continious")
+	assert(P.prefix== "")
 	assert(P.level== "")
-	assert(P.leveli== "")
 	assert(!P.base)
 	assert(!P.omitted)
 	assert(P.varname== "age")
@@ -80,7 +87,8 @@ void test(){
 	P.setup("c.age")
 	//P.print()
 	
-	assert(P.level== "c")
+	assert(P.paramtype=="continious")
+	assert(P.prefix== "c")
 	assert(P.varname== "age")
 	assert(P.label=="age in current year")
 	assert(!P.base)
@@ -91,7 +99,8 @@ void test(){
 	P.setup("co.wage")
 	P.print()
 	
-	assert(P.level== "co")
+	assert(P.paramtype=="continious")
+	assert(P.prefix== "co")
 	assert(!P.base)
 	assert(P.omitted)
 	assert(P.varname== "wage")
@@ -99,9 +108,46 @@ void test(){
 	assert(!P.interaction)
 	assert(P.vlab=="")
 	
-	//produce error
-	P.setup("xyzn11.wage")
+	/******************************************************************************/
+	// test single paramters that has no label or value-labels set or both
+	/******************************************************************************/
+	// continuious omitted variable with no label
+	P.setup("co.tenure")
 	P.print()
+	
+	assert(P.paramtype=="continious")
+	assert(P.prefix== "co")
+	assert(!P.base)
+	assert(P.omitted)
+	assert(P.varname== "tenure")
+	assert(P.label=="tenure")
+	assert(!P.interaction)
+	assert(P.vlab=="")
+	
+	// factor with no value-label
+	P.setup("11b.married")
+	P.print()
+	
+	assert(P.paramtype=="factor")
+	assert(P.prefix== "11b")
+	assert(P.level== "11")
+	assert(P.base)
+	assert(P.varname== "married")
+	assert(P.label=="married")
+	assert(P.vlab=="11")
+	assert(!P.interaction)
+	
+	/******************************************************************************/
+	// Interactions
+	/******************************************************************************/
+	
+		// factor with no value-label
+	P.setup("0.collgrad#3.race")
+	P.print()
+
+	
+	
+	
 }
 
 test()
