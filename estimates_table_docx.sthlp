@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.2.8 20200105 }{...}
-{right:version 1.2.7}
+{* *! version 1.2.9 20200105 }{...}
+{right:version 1.2.9}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
@@ -20,13 +20,13 @@ namelist
 {syntab:Main}
 {synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
 {synopt:{opt title(string)}}Optional title for table.{p_end}
-{synopt:{opt b(%fmt)}}Stata format used for coifficents. Default is %9.2f{p_end}
-{synopt:{opt star(numlist)}}Numlist of significanse levels. Default is .05 .01 .001.{p_end}
+{synopt:{opt b(%fmt)}}Stata format used for coefficients. Default is %9.2f{p_end}
+{synopt:{opt star(numlist)}}Numlist of significance levels. Default is .05 .01 .001.{p_end}
 {synopt:{opt stats(scalarlist)}}Report scalarlist in table. Allowed is N aic bic {p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
-{synopt:{opt keep(coflist)}}List of coifficent to indlude in table.{p_end}
+{synopt:{opt keep(coflist)}}List of coefficient to include in table.{p_end}
 {synopt:{opt pagesize(psize)}}Set pagesize of Word document.{p_end}
-{synopt:{opt landscape}}Use landscape layout for worddocument.{p_end}
+{synopt:{opt landscape}}Use landscape layout for word document.{p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}

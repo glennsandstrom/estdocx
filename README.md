@@ -1,4 +1,4 @@
-# estimates_table_docx v. 1.2.8
+# estimates_table_docx v. 1.2.9
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
@@ -57,20 +57,20 @@ Options           | Description
 ----------------- | -------------
 saving(filename)  |  Path/filename of the generated docx file.
 title(string)     |  Optional title for table.
-b(%fmt)           |  Stata format used for coifficents. Default is %9.2f
+b(%fmt)           |  Stata format used for coefficients. Default is %9.2f
 star(numlist)     |  Numlist of significance levels. Default is .05 .01 .001.
 stats(scalarlist) |  List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
 baselevels        |  Include all baselevels.
-keep(coflist)     |  List of coifficent to indlude in table.
+keep(coflist)     |  List of coefficients to include in table.
 landscape         |  Use landscape layout for Word document.
-pagesize(psize)   |  Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Deafault is pagesize(A4)
+pagesize(psize)   |  Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Default is pagesize(A4)
 
 
 Description
 ------------
 estimates_table_docx takes a namelist of stored estiamtes and exports this to a publication quality table in MS Word.
 Although it is possible to export estimates to a table using the command putdocx in Stata 15 (i.e. putdocx table results =
-etable). The builtin method causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making
+etable). The built in method causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making
 it difficult to choose alignment in the cells and the need to erase these characters.  estimates_table_docx avoid such
 issues and allows some additional benefits by providing options for the formating of the resulting table and inclusion of
 legend etc.

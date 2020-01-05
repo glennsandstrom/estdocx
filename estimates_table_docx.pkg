@@ -1,4 +1,4 @@
-d 'estimates_table_docx':program proving same fucntionality as estimates table but exports results directly to a Wordtable
+d 'estimates_table_docx':program proving same functionality as estimates table but exports results directly to a Wordtable
 d
 d The command putdocx in Stata 15 provide a native implementation for exporting estimates
 d trough the command docx table results = etable.
