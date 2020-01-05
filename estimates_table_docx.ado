@@ -412,12 +412,13 @@ program estimates_table_docx
 		/**************************************************************************/
 		// get the type of paramter and the full label and value label to print
 		// in the row, differntiate between base levels and parmaters that are not 1|0
-		// thge function paramtype should be simplified and be able to handle
-		// an arbitrary number of varaibles in an interaction.....
 		mata: paramtype("`var'") //returns locals: paramtype, label, vlab
-		
+// 		di "var= `var'"
+// 		di "paramtype= `paramtype'"
+// 		di "label= `label'"
+// 		di "vlab= `vlab'"
 		// print paratmters that are facors or intercations including factors that have 
-		// more than one level....HERE paramtype should return factor/factor-interaction
+		// more than one level
 		if "`paramtype'"=="factor" | "`paramtype'"=="factor-interaction"{
 			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
 			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
@@ -440,7 +441,7 @@ program estimates_table_docx
 			}
 		}
 		// here paramtype should return continious
-		else if "`paramtype'"=="continious" | "`paramtype'"=="continious-interaction" {
+		else if "`paramtype'"=="continious" | "`paramtype'"=="continious-interaction" | "`paramtype'"=="const" {
 		
 			write_continious `models', row(`row') var(`var') varlabel(`label') fmt(`b') star("`star'")
 			local ++row
@@ -560,8 +561,19 @@ void parameter::setup(string scalar user_txt) {
 			if (i > 1) this.comblabel= this.comblabel + " * " + this.vars[i].label
 			else this.comblabel= this.vars[i].label
 			
-			if (this.vars[i].vlab!="" & this.combvlab!="") this.combvlab= this.combvlab + " * " + this.vars[i].vlab
-			else this.combvlab= this.vars[i].vlab
+			// if vlab is null do nothing
+			// if vlab !null and comb !null add "*" + vlab to comb
+			// if vlab !null and comb null add vlab to comb
+			if (this.combvlab=="" & this.vars[i].vlab!="") {
+				this.combvlab= this.vars[i].vlab
+			}
+			else if(this.combvlab!="" & this.vars[i].vlab!="") {
+				this.combvlab= this.combvlab + " * " + this.vars[i].vlab
+			}
+			else {
+				// do nothing
+			}
+			
 		
 		}
 		//check if any of the incuded variables are factors this.combvlab will not be null
@@ -582,6 +594,8 @@ void parameter::setup(string scalar user_txt) {
 
 struct paramvar parameter::parsevar(string scalar vartext){
 		struct paramvar scalar P
+		real scalar rcode
+		string scalar cmd
 		
 		
 		// assign the part of the string efter . to P.varname 
@@ -589,6 +603,17 @@ struct paramvar parameter::parsevar(string scalar vartext){
 		
 		// assign part of string before . to P.prefix
 		P.prefix= substr(vartext , 1 , strrpos(vartext,".")-1 )
+		
+		//check that P.varname is a varaible in the dataset
+		cmd= "confirm variable " + P.varname
+		//function will return non-zero (error=111) if varname does not exist
+		// set type and name and then exit
+		if (_stata(cmd, 1)) {
+			P.vartype= "const"
+			P.label= P.varname
+			return(P)
+		
+		}
 		
 		//check if prefix contains numeric character then it is a factor
 		if (regexm(P.prefix, "[0-9]")) {
