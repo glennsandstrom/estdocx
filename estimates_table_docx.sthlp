@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.2.7 20190920 }{...}
+{* *! version 1.2.8 20200105 }{...}
 {right:version 1.2.7}
 {title:Title}
 {phang}
