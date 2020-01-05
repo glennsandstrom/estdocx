@@ -418,7 +418,7 @@ program estimates_table_docx
 		
 		// print paratmters that are facors or intercations including factors that have 
 		// more than one level....HERE paramtype should return factor/factor-interaction
-		if "`paramtype'"=="factor" | "`paramtype'"=="f#f" | "`paramtype'"=="c#f"{
+		if "`paramtype'"=="factor" | "`paramtype'"=="factor-interaction"{
 			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
 			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
 				//check if varname is in the list of printed varnames
@@ -440,7 +440,7 @@ program estimates_table_docx
 			}
 		}
 		// here paramtype should return continious
-		else if "`paramtype'"=="continious" | "`paramtype'"=="c#c" | "`paramtype'"=="constant" {
+		else if "`paramtype'"=="continious" | "`paramtype'"=="continious-interaction" {
 		
 			write_continious `models', row(`row') var(`var') varlabel(`label') fmt(`b') star("`star'")
 			local ++row
@@ -488,18 +488,178 @@ mata:
 /*###############################################################################################*/
 // STRUCTURES
 /*###############################################################################################*/
+struct paramvar {
+		string scalar vartype
+		string scalar varname
+		string scalar label 
+		string scalar vlab
+		string scalar prefix		//entire string before . in paramtxt
+		string scalar level			
+		real scalar base
+		real scalar omitted
 
-struct paratype {
-	string scalar paramtype, label, vlab	// public return values as stata macros
-	
-	real scalar interaction					// private
-	string scalar param, varname, level		// private
-	string matrix intervars					// private
 
 }
 /*###############################################################################################*/
 // CLASSES
 /*###############################################################################################*/
+class parameter {
+	public:
+		string scalar paramtype		// type of paramter.. continious, factor, interaction
+		string scalar comblabel 	// combined label of all variables forming the paramter
+		string scalar combvlab		// combined label of all included varaibels/levels
+		string scalar paramtxt		//complete string forming the paramter
+		
+		real scalar interaction 	//boolean indicating if it is an interaction
+		
+		string vector intervars
+		
+		struct paramvar vector vars //vector of different variables forming the parameter
+				
+		void setup()
+		void print()
+		struct paramvar parsevar()
+	
+	
+		
+}
+
+void parameter::setup(string scalar user_txt) {
+	real scalar i
+	struct paramvar scalar P
+	
+	//make sure all propreties are null when setup is run
+	this.comblabel= this.combvlab = this.paramtype = this.paramtxt = ""
+	this.interaction= .
+	
+	
+	this.paramtxt= user_txt // text defining the complete paramteter
+	
+	//check if parameter is an interaction
+	this.interaction= strrpos(this.paramtxt,"#")  > 0
+	
+	if (this.interaction) {
+		//"do complicated things for interaction paramters"
+		this.intervars=tokens(subinstr(this.paramtxt, "#", " ") ) //matrix with varnames forming the interaction
+		
+		// fill colvector this.vars with strcutures for each varaible in interaction stored in intervars
+		// set this vars to a new vector of struct paramvars of length= this.intervars
+		this.vars = paramvar(length(this.intervars)) 
+				
+		for (i=1; i<=length(this.intervars); i++) {
+			P= this.parsevar(this.intervars[i]) //create struct paramvar using string in this.intervars
+			this.vars[i]= P // add struct to vector this.vars
+		
+		}
+		
+		// form the combined label and value-label for the interaction
+		// intercations containing at least one factor should have vlab
+		
+		for (i=1; i<=length(this.vars); i++) {
+						
+			if (i > 1) this.comblabel= this.comblabel + " * " + this.vars[i].label
+			else this.comblabel= this.vars[i].label
+			
+			if (this.vars[i].vlab!="" & this.combvlab!="") this.combvlab= this.combvlab + " * " + this.vars[i].vlab
+			else this.combvlab= this.vars[i].vlab
+		
+		}
+		//check if any of the incuded variables are factors this.combvlab will not be null
+		if(this.combvlab=="") this.paramtype= "continious-interaction"
+		else this.paramtype= "factor-interaction"
+	
+	}
+	else {
+		//"do easy things for factors and continious variables"
+		//create a single element vector with one paramvar struct
+		this.vars = paramvar(1) 
+		this.vars= this.parsevar(this.paramtxt)
+		this.comblabel= this.vars[1].label
+		this.combvlab= this.vars[1].vlab
+		this.paramtype= this.vars[1].vartype
+	}
+}
+
+struct paramvar parameter::parsevar(string scalar vartext){
+		struct paramvar scalar P
+		
+		
+		// assign the part of the string efter . to P.varname 
+		P.varname= substr(vartext , strrpos(vartext,".")+1 ,  strlen(vartext))
+		
+		// assign part of string before . to P.prefix
+		P.prefix= substr(vartext , 1 , strrpos(vartext,".")-1 )
+		
+		//check if prefix contains numeric character then it is a factor
+		if (regexm(P.prefix, "[0-9]")) {
+			
+			P.vartype= "factor"
+			
+			// check if prefix is base
+			P.base= strrpos(P.prefix,"b")  > 0
+			
+			// check if prefix is ommitted
+			P.omitted= strrpos(P.prefix,"o")  > 0
+
+			//get only the numeric value in prefix if it contains letters to get valuelabel with st_varvaluelabel()
+			// match the numbers with regexm and tehn return them with regexs
+			if (regexm(P.prefix, "[0-9]+"))	P.level= regexs(0)
+		
+			
+			// check that value labels are set and set vlab to correct value label in P.vlab 
+			if (st_varvaluelabel(P.varname)!="") P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
+			else P.vlab = P.level
+			
+			// sometimes the value lable is set but is null string => set to level of factor
+			if (P.vlab=="") P.vlab = P.level
+		}
+		else if (P.prefix=="" | P.prefix=="c" | P.prefix=="co") {
+			P.vlab= "" // paramter is not factor vlab should be null
+			P.vartype= "continious"
+			
+			//contionios variables haver no base-level
+			P.base= 0
+			
+			// check if paramter is omitted 
+			P.omitted= strrpos(P.prefix,"o") > 0
+		
+		}
+		else {
+			_error(3300, "Parameter contains an non impelmented value(s)")
+		}
+		
+		// check that a varlabel is set else return varname in P.label
+		if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
+		else P.label= P.varname
+		
+		return(P)
+}
+
+void parameter::print() {
+	real scalar i
+		printf("{txt}___________________________________________________________\n")
+	for(i=1; i<=length(this.vars); i++) {
+		
+		
+		printf("{txt}---Structure: %f ---------------------------------\n", i)
+		printf("{txt}vartype is:{result} %s\n", this.vars[i].vartype)
+		printf("{txt}varname is:{result} %s\n", this.vars[i].varname)
+		printf("{txt}label is:{result} %s\n", this.vars[i].label)
+		printf("{txt}vlab is:{result} %s\n", this.vars[i].vlab)
+		printf("{txt}prefix is:{result} %s\n", this.vars[i].prefix)
+		printf("{txt}level is:{result} %s\n", this.vars[i].level)
+		printf("{txt}base is:{result} %f\n", this.vars[i].base)
+		printf("{txt}omitted is:{result} %f\n", this.vars[i].omitted)
+	}
+
+		printf("{txt}--- Object: --------------------------------------\n")
+		printf("{txt}paramtxt is:{result} %s\n", this.paramtxt)
+		printf("{txt}paramtype is:{result} %s\n", this.paramtype)
+		printf("{txt}comblabel is:{result} %s\n", this.comblabel)
+		printf("{txt}combvlab is:{result} %s\n", this.combvlab)
+		printf("{txt}interaction is:{result} %f\n", this.interaction)
+		printf("{txt}___________________________________________________________\n")
+}
 
 
 /*###############################################################################################*/
@@ -752,158 +912,17 @@ real scalar getindex(string scalar val, string vector names) {
 	}
 }
 
-void interaction_type(struct paratype scalar P) {
-	real scalar i
-	string matrix levels
-	
-	P.intervars=tokens(subinstr(P.param, "#", " ") ) //matrix with varnames forming the interaction
-	if (length(P.intervars) > 2) _error("Program estimates_table_docx does not support more than 2-way interactions")
-	
-	levels= J(cols(P.intervars), 1 , "")
-	
-	//determine type of interaction
-	for(i=1; i<=cols(P.intervars); i++) {
-		P.level= substr(P.intervars[i] , 1 , strrpos(P.intervars[i],".")-1 )
-		
-		// regular expression matching if first letter is real => factor
-		if (regexm(P.level, "^[0-9]")) P.level= "f"
-		levels[i]= P.level
-		
-	}
-	// sort the colvector of levels
-	levels= sort(levels, 1)
-	
-	//form the interaction type and store in P.interaction
-	levels= levels'
-	//levels
-	for(i=1; i<=cols(P.intervars); i++) {
-		if (i < cols(P.intervars)) P.paramtype= P.paramtype + levels[i] + "#"
-		else P.paramtype= P.paramtype + levels[i]
-	}
-
-}
 
 void paramtype(string scalar param) {
-	// returns macros paramtype, label, vlab
-	// paramtype: the type of parameter: continious, factor, constant, f#f, c#f, c#c
-	// label: the full combination of label(s) to print in the header column
-	// vlab: the full combination of valuelabel(s) to print if it is a factor involved
-	// base: if one of the included parameters are base=> base== TRUE
-	// omit: if one of the included parameters are omitted=> omit== TRUE
-	real scalar i
-	struct paratype scalar P
-	P.param= param
-	//replace all occurences of bn in the levels
-	P.param= subinstr(P.param, "bn.", ".") 
+	class parameter scalar P
 	
-	//check if parameter is an interaction
-	P.interaction= strrpos(P.param,"#") // if param contains # it´s an interaction
-	// code from here should form the combinaton of all the varnames concateneded into
-	// P.label AND all value lables concatened into P.vlab if it is an intercation
-	// P. paramtype should be factor, factor-int, continious, contionious-int
-	
-	if(P.interaction) { 
-		
-		interaction_type(P)	
-		
-		// paramter is a factor#factor or continious#factor interaction
-		if (P.paramtype=="f#f" | P.paramtype=="c#f") {
-		
-			for(i=1; i<=cols(P.intervars); i++) {
-				P.varname= substr(P.intervars[i] , strrpos(P.intervars[i],".")+1 ,  strlen(P.intervars[i]))
-				// returns the variable label associated with var, such as "Sex of Patient", 
-				// or it returns "" if var has no variable label.	
-				
-				//concatenate variable labels
-				if (i < cols(P.intervars)) P.label= P.label + st_varlabel(P.varname) + " * "
-				else P.label= P.label + st_varlabel(P.varname)
-				
-				P.level= substr(P.intervars[i] , 1 , strrpos(P.intervars[i],".")-1 )
-				
-				//remove base, omitted prefix from level => st_vlmap(string varname, real level)
-				P.level= subinstr(P.level, "b", "")
-				P.level= subinstr(P.level, "o", "")
-				
-				// throw error if P.level is more than 1 character in lenght WHY DID I THIS??
-				// if (strlen(P.level) > 1) _error(3300, "Level of factor has an non implmented value")
-								
-				// returns the value-label name associated with var, such as "origin", or it returns "" if var has no
-				// value label.  st_varvaluelabel(var, labelname) changes the value-label name associated with var.
-				if (P.level=="c") {
-				//concatenate the valuelabels
-				
-					if (i < cols(P.intervars)) P.vlab= P.vlab + st_varlabel(P.varname) + " * "
-					else P.vlab = P.vlab + st_varlabel(P.varname)
-				}
-				else {
-					if (i < cols(P.intervars)) P.vlab= P.vlab + st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level)) + " * "
-					else P.vlab = P.vlab + st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
-			
-				}
-			}
-		}
-		else if(P.paramtype=="c#c") { // paramter is a continious#continious interaction
-			for(i=1; i<=cols(P.intervars); i++) {
-				P.varname= substr(P.intervars[i] , strrpos(P.intervars[i],".")+1 ,  strlen(P.intervars[i]))
-				// returns the variable label associated with var, such as "Sex of Patient", 
-				// or it returns "" if var has no variable label.	
-				
-				//concatenate variable labels
-				if (i < cols(P.intervars)) P.label= P.label + st_varlabel(P.varname) + " * "
-				else P.label= P.label + st_varlabel(P.varname)
-			}
-		}
-		
-	}
-	else {
-		P.varname= substr(P.param , strrpos(P.param,".")+1 ,  strlen(P.param))
-		P.level= substr(P.param , 1 , strrpos(P.param,".")-1 )
-		
-		if(P.level!="") {
-			P.paramtype= "factor"
-			
-			// check that a varlabel is set else return varname in P.label
-			if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
-			else P.label= P.varname
-			
-			// check that value labels are set and set vlab to correct value label in P.vlab 
-			if (st_varvaluelabel(P.varname)!="") P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
-			else P.vlab = P.level
-			
-			// sometimes the value lable is set but is null string => set to level of factor
-			if (P.vlab=="") P.vlab = P.level
-
-		}
-		else {
-			if(P.varname=="_cons") {
-				P.paramtype= "constant"
-				P.label= P.varname
-			}
-			else {
-				P.paramtype= "continious"
-				if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
-				else P.label= P.varname
-					
-				}
-			}
-			
-	}
-	/*
-	printf("{txt}param is:{result} %s\n", P.param)
-	printf("{txt}varname is:{result} %s\n", P.varname)
-	printf("{txt}level is:{result} %s\n", P.level)
-	printf("{txt}interaction is:{result} %f\n", P.interaction)
-	printf("{txt}label is:{result} %s\n", P.label)
-	printf("{txt}vlab is:{result} %s\n", P.vlab)
-	printf("{txt}paramtype is:{result} %s\n", P.paramtype)
-	*/
+	P.setup(param)
 	st_local("paramtype", P.paramtype)
-	st_local("vlab", P.vlab)
-	st_local("label", P.label)
-	
-	//liststruct(P)
-}
+	st_local("vlab", P.combvlab)
+	st_local("label", P.comblabel)
 
+
+}
 
 
 end
