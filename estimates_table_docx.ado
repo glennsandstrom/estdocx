@@ -3,9 +3,18 @@
 /**************************************************************************/
 // * DONE:Implement a keep(coeflist) option and report coefficients in order specified
 //
+// * PARTIALLY: Implement eform option...fixed but does not ahdle multiple equation models such as'
+//   xtlogit with ancilliary paramters that should not be transformed. Program needs to honor the 
+//   equation name where free paramters have a different equation name, In r(table) all params 
+//   after / in the equation name are free paramters "Free parameters are scalar parameters, 
+//   variances, covariances, and the like that are part of them odel being fit"
+//   
+//   These should be handled differntly removed from the matrix of parameters and placed 
+//   in the stats matrix and handled separatly printed under each model. Asi the program work now
+//   it print also the free paramters in eform wich is an error.
 //
 //
-// * BUG:if a varaible has no valuelables program ends in Error st_vlmap():  3300  argument out of range
+// * BUG:if a variable has no valuelables program ends in Error st_vlmap():  3300  argument out of range
 // * BUG: if factor has more than single digit level program trows error
 //   for smoe reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
 //   Temporarly I comment this out but need to figure out why i did this in the first place
@@ -17,13 +26,13 @@
 // * Implement higher order interactions than 2-way.... Simplify the functions paramtype
 //   Only needs to return factor, factor-interaction (includes factor#continious), 
 //   continious (includes constants, continious-interactions)
-//	 Goal is to simplifiy the forming of rowlabels for differnt types of intercations
+//	 Goal is to simplifiy the forming of rowlabels for differnt types of interacations
 //   and to handle situations when there are either no label or no value-labels
 //   assossiated to one or more variables/levels in the paramteter that forms the row of the table
 //
 // * Handle stratified variables in cox-regressions
 // 
-// * Implment option to set the titles of models
+// * Implement option to set the titles of models
 /**************************************************************************/
 /**SUB-ROUTINES  **/
 /**************************************************************************/
@@ -82,13 +91,13 @@
 		[keep(string)]
 		
 		local models= "`namelist'" //space sparated list of estimates
+			
 		
 		//loop over models to create table model_betas & model_p
 		foreach model in `models' {
-			
-			//get stored estimates for model
-			capture qui estimates replay `model'
-			
+		// create a matrix named model for each stored estimate that can then be combined
+		// by mata to th the matrices model_betas, model_p model_eform
+				
 			if _rc==111 {
 				di _newline(3)  
 				di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
@@ -98,6 +107,8 @@
 				exit _rc
 			}
 			
+			//get stored estimates for model Y Y Z
+			capture qui estimates replay `model'
 			mat `model'= r(table)
 			
 			//transpose to get variables as rows
@@ -112,12 +123,13 @@
 		if("`keep'"=="") mata: models_varlist("`models'")
 		else mata: models_varlist("`models'", "`keep'")
 		
-		mata: model_beta_table("`models'", "`modelvars'", "b pvalue")
+		mata: model_beta_table("`models'", "`modelvars'", "b pvalue eform")
 		
 		return local params "`modelvars'"
 		return scalar numparams= `numparams'
 		return matrix model_betas= model_betas
 		return matrix model_p= model_p
+		return matrix model_eform= eform
 		
 	end
 	/*########################################################################*/
@@ -129,11 +141,14 @@
 		var(string) ///
 		varlabel(string) ///
 		fmt(string) ///
-		star(string)
+		star(string) ///
+		[eform]
 			
 		local models= "`namelist'" //space sparated list of estimates
+		
 		mat B= r(model_betas)
 		mat P= r(model_p)
+		mat E= r(model_eform)
 		
 		// add row for _cons to table
 		putdocx table esttable(`row',.), addrows(1)
@@ -141,10 +156,13 @@
 		putdocx table esttable(`row',1) = ("`varlabel'"), bold font(Garamond, 11) halign(left)
 		
 		
-		//loop over models and write paramter for all models
+		//loop over models and write parameter for all models
 		local col=2
 		foreach model of local models {
-			local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
+			//check if parameters should be transformed to eform and if they are untranformed print exp(B)
+			if ("`eform'"´!="") & !(E[rownumb(E,"`var'") ,colnumb(E,"`model'")]) local b= exp(B[rownumb(B,"`var'") ,colnumb(B,"`model'")])
+			else local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
+			
 			local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
 			mata: sig_param(`b', `p', "`star'", "`fmt'") // returns local param 
 			putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left) 
@@ -161,12 +179,14 @@
 		var(string) ///
 		vlab(string) ///
 		fmt(string) ///
-		star(string)
+		star(string) ///
+		[eform]
 			
 		local models= "`namelist'" //space sparated list of estimates
 		
 		mat B= r(model_betas)
 		mat P= r(model_p)
+		mat E= r(model_eform)
 		
 		// add row for factor level to table
 		putdocx table esttable(`row',.), addrows(1)
@@ -179,7 +199,10 @@
 		//loop over models and write paramters
 		local col=2
 		foreach model of local models {
-				local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
+				//check if parameters should be transformed to eform and if they are untranformed print exp(B)
+				if ("`eform'"´!="") & !(E[rownumb(E,"`var'") ,colnumb(E,"`model'")]) local b= exp(B[rownumb(B,"`var'") ,colnumb(B,"`model'")])
+				else local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
+				
 				local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
 				
 				// returns local param => string with sig marker
@@ -357,7 +380,8 @@ program estimates_table_docx
 		[baselevels] ///
 		[keep(string)] ///
 		[pagesize(string)] ///
-		[landscape]
+		[landscape] ///
+		[eform]
 
 
 	// set local holding the names of estimates to be reported in table
@@ -393,7 +417,7 @@ program estimates_table_docx
 	// 2. r(numparams)= SCALAR Number of paramters
 	// 3. r(model_betas) MATRIX beta of all models
 	// 4. r(model_p) MATRIX pvalues of all models
-	// 5. 
+	// 5. r(model_eform) MATRIX of bolean values indicating if paramter is in eform or not
 	/**************************************************************************/
 	/** PRINT ALL THE UNIQUE VARIABLES OCCURING IN THE MODELS AND THEIR LEVELS*/
 	/**************************************************************************/
@@ -435,15 +459,15 @@ program estimates_table_docx
 					local printed "`printed' `lab'" //add varname to list of printed headers
 				}
 				
-				// print row with parameters 
-				write_level `models', row(`row') var(`var') vlab(`vlab') fmt(`b') star("`star'")
+				// print row with factor parameters 
+				write_level `models', row(`row') var(`var') vlab(`vlab') fmt(`b') star("`star'") `eform' 
 				local ++row
 			}
 		}
 		// here paramtype should return continious
 		else if "`paramtype'"=="continious" | "`paramtype'"=="continious-interaction" | "`paramtype'"=="const" {
 		
-			write_continious `models', row(`row') var(`var') varlabel(`label') fmt(`b') star("`star'")
+			write_continious `models', row(`row') var(`var') varlabel(`label') fmt(`b') star("`star'") `eform'
 			local ++row
 			local printed "`printed' `lab'"
 				
@@ -508,7 +532,7 @@ class parameter {
 	public:
 		string scalar paramtype		// type of paramter.. continious, factor, interaction
 		string scalar comblabel 	// combined label of all variables forming the paramter
-		string scalar combvlab		// combined label of all included varaibels/levels
+		string scalar combvlab		// combined label of all included variabels/levels
 		string scalar paramtxt		//complete string forming the paramter
 		
 		real scalar interaction 	//boolean indicating if it is an interaction
@@ -729,7 +753,7 @@ void model_beta_table(string scalar models, string scalar varlist, string scalar
 	string vector this_models, this_varlist, this_stats, rownames, colnames
 	real scalar a, b, c, nummodels, rowvarlist, rowmodel, col, mlenth, rowsum
 	real vector baselevels	// vector of booleans= TRUE if row of model_betas only contains 1 or .
-	real matrix model_betas, model_p, rtable
+	real matrix model_betas, model_p, rtable, eform
 	string matrix A
 	
 	// convert string scalar to string vector
@@ -739,6 +763,8 @@ void model_beta_table(string scalar models, string scalar varlist, string scalar
 	
 	model_betas= J(length(this_varlist), length(this_models), .)
 	model_p= J(length(this_varlist), length(this_models), .)
+	eform= J(length(this_varlist), length(this_models), .)
+	
 	col=1
 	for (a=1; a<=length(this_models); a++) {
 		model= this_models[1,a]
@@ -758,16 +784,18 @@ void model_beta_table(string scalar models, string scalar varlist, string scalar
 			rownames[b,1]=subinstr(rownames[b,1], "b.", ".")
 			rownames[b,1]=subinstr(rownames[b,1], "o.", ".")	
 		}
-		//loop over varlist and populate matrix model_betas and model_p
+		//loop over varlist and populate matrix model_betas, model_p, eform
 		for (c=1; c<=length(this_varlist); c++) {
 			param= this_varlist[1,c]
 			//check if param is in rownames of the model
-			if (anyof(rownames, param)){ //if param is in get the index
+			if (anyof(rownames, param)){ //if param is in the list of varnames get the index
 				
 				rowvarlist= getindex(param, this_varlist) //find row of param in unique varlist
 				rowmodel= getindex(param, rownames)       //find row of param in rownames
-				model_betas[rowvarlist,col]= rtable[rowmodel,getindex("b", colnames)]
-				model_p[rowvarlist,col]= rtable[rowmodel,getindex("pvalue", colnames)]
+				model_betas[rowvarlist, col]= rtable[rowmodel, getindex("b", colnames)]
+				model_p[rowvarlist, col]= rtable[rowmodel, getindex("pvalue", colnames)]
+		
+				eform[rowvarlist, col]= rtable[rowmodel, getindex("eform", colnames)]
 			}
 			
 		}
@@ -791,6 +819,7 @@ void model_beta_table(string scalar models, string scalar varlist, string scalar
 	
 	st_matrix("model_betas", model_betas)
 	st_matrix("model_p", model_p)
+	st_matrix("eform", eform)
 	st_matrix("baselevels", baselevels)
 	
 	//måste lägga till en tom rad för att funka med colstripe etc. nedan
@@ -805,8 +834,10 @@ void model_beta_table(string scalar models, string scalar varlist, string scalar
 	// set the row and colnames of the returned matrices
 	st_matrixrowstripe("model_betas", this_varlist)
 	st_matrixrowstripe("model_p", this_varlist)
+	st_matrixrowstripe("eform", this_varlist)
 	st_matrixcolstripe("model_betas", this_models)
 	st_matrixcolstripe("model_p", this_models)
+	st_matrixcolstripe("eform", this_models)
 }
 
 void models_varlist(string scalar models, |string scalar cofkeep){

@@ -1,4 +1,4 @@
-# estimates_table_docx v. 1.2.9
+# estimates_table_docx v. 1.2.9.1
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
@@ -62,9 +62,9 @@ star(numlist)     |  Numlist of significance levels. Default is .05 .01 .001.
 stats(scalarlist) |  List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
 baselevels        |  Include all baselevels.
 keep(coflist)     |  List of coefficients to include in table.
+pagesize(psize)   |  Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Default is pagesize(A4).
 landscape         |  Use landscape layout for Word document.
-pagesize(psize)   |  Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Default is pagesize(A4)
-
+eform             |  Report parameters as exp(B)
 
 Description
 ------------

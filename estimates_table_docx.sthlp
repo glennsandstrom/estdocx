@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.2.9 20200105 }{...}
-{right:version 1.2.9}
+{* *! version 1.2.9.1 20200616 }{...}
+{right:version 1.2.9.1}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
@@ -27,6 +27,7 @@ namelist
 {synopt:{opt keep(coflist)}}List of coefficient to include in table.{p_end}
 {synopt:{opt pagesize(psize)}}Set pagesize of Word document.{p_end}
 {synopt:{opt landscape}}Use landscape layout for word document.{p_end}
+{synopt:{opt eform}}Report parameters as exp(B).{p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}
@@ -77,6 +78,9 @@ For Model 3 in examples you would specify age race collgrad wage grade tenure co
 
 {phang}
 {opt landscape} Use landscape layout for Word document.
+
+{phang}
+{opt eform} Report parameters as exp(B).
 
 {marker examples}{...}
 {title:Examples}
