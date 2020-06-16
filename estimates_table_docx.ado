@@ -199,7 +199,7 @@
 		//loop over models and write paramters
 		local col=2
 		foreach model of local models {
-				//check if parameters should be transformed to eform and if they are untranformed print exp(B)
+				//check if parameters should be transformed to eform and if they are untransformed print exp(B)
 				if ("`eform'"´!="") & !(E[rownumb(E,"`var'") ,colnumb(E,"`model'")]) local b= exp(B[rownumb(B,"`var'") ,colnumb(B,"`model'")])
 				else local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
 				
@@ -715,15 +715,19 @@ void parameter::print() {
 // FUNCTIONS
 /*###############################################################################################*/
 void sig_param(real scalar param, real scalar sig, string scalar star, string scalar fmt) {
-	string scalar parameter, text
-	real matrix this_star
+	// param is BETA
+	// sig is p-value
+	// star is cutoffs for number of stars
+	// fmt is fomrat for BETA
+	string scalar parameter, pvalue
+	real rowvector this_star
 	real scalar i, level
 	
 	this_star= strtoreal(tokens(star))
 	/*
 	printf("{txt}param is:{result} %f\n", param)
 	printf("{txt}sig is:{result} %f\n", sig)
-	
+	printf("{txt}star is:{result} %s\n", star)
 	
 	printf("{txt}format of this_star is:{result} %s %s\n", eltype(this_star), orgtype(this_star))
 	printf("{txt}format of this_star is:{result} %s %s\n", eltype(this_star), orgtype(this_star))
@@ -733,15 +737,28 @@ void sig_param(real scalar param, real scalar sig, string scalar star, string sc
 	
 	printf("{txt}fmt is:{result} %s:\n", fmt)
 	*/
+	// basic test that star option is in allowed format
+	if (star!="none" & this_star==.) _error("Option star() has unallowed format")
+	//if (orgtype(this_star)!="rowvector" |  eltype(this_star)!="real") _error("Option star() has unallowed format")
+	
+	
 	if (param==1 | param==0) {
-		parameter= "(base)"
+		parameter= "(base)" // return base string for basevalues
 	}
 	else {
 		parameter= subinstr(strofreal(param, fmt) ," ","")
-		for(i=1; i<=cols(this_star); i++) {
-			if  (sig < this_star[i]) parameter= parameter + "*"
-		
-		}
+			if(star=="none"){
+				// just report p-value as numeric scalar
+				pvalue= substr(strofreal(sig, "%5.3f"), 2, .)
+				parameter= parameter + " (" + pvalue + ")"
+				
+			}
+			else {
+				//add stars according to cutoffs
+				for(i=1; i<=cols(this_star); i++) {
+					if  (sig < this_star[i]) parameter= parameter + "*"
+					}
+			}
 	}
 	st_local("param", parameter)
 

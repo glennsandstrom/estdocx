@@ -1,4 +1,4 @@
-# estimates_table_docx v. 1.2.9.1
+# estimates_table_docx v. 1.2.9.2
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
@@ -58,7 +58,7 @@ Options           | Description
 saving(filename)  |  Path/filename of the generated docx file.
 title(string)     |  Optional title for table.
 b(%fmt)           |  Stata format used for coefficients. Default is %9.2f
-star(numlist)     |  Numlist of significance levels. Default is .05 .01 .001.
+star(numlist)     |  Numlist of significance levels. Default is .05 .01 .001.  Specifye stats(none) to print pvalue asis.
 stats(scalarlist) |  List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
 baselevels        |  Include all baselevels.
 keep(coflist)     |  List of coefficients to include in table.

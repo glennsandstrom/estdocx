@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 1.2.9.1 20200616 }{...}
-{right:version 1.2.9.1}
+{* *! version 1.2.9.2 20200616 }{...}
+{right:version 1.2.9.2}
 {title:Title}
 {phang}
 {bf:estimates_table_docx} {hline 2} a command giving same functionality as estimates table 
@@ -21,7 +21,7 @@ namelist
 {synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
 {synopt:{opt title(string)}}Optional title for table.{p_end}
 {synopt:{opt b(%fmt)}}Stata format used for coefficients. Default is %9.2f{p_end}
-{synopt:{opt star(numlist)}}Numlist of significance levels. Default is .05 .01 .001.{p_end}
+{synopt:{opt star(numlist)}}Numlist of significance levels. Default is .05 .01 .001. while specifying specify star(none) prints the pvalues{p_end}
 {synopt:{opt stats(scalarlist)}}Report scalarlist in table. Allowed is N aic bic {p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
 {synopt:{opt keep(coflist)}}List of coefficient to include in table.{p_end}
@@ -59,7 +59,7 @@ namelist
 {opt b(%fmt)} Specifies how the coefficients are to be displayed. Default is %9.2f
 
 {phang}
-{opt star(numlist .05 .01 .001)} significanse levels.
+{opt star(numlist .05 .01 .001)} significanse levels. If stats(none) is passed pvalues are printed within parentheses with three decimal places.
 
 {phang}
 {opt stats(scalarlist)} List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
