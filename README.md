@@ -116,5 +116,5 @@ Author
 
 Dr Glenn Sandström, Umeå Univerity, Sweden.
 Email: glenn.sandstrom@umu.se
-Web:http://www.idesam.umu.se/english/about/staff/?uid=glsa0001
+Web:http://www.umu.se/en/staff/glenn-sandstrom/
 
