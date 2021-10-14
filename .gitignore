@@ -1,16 +1,18 @@
 #git ignore file
 
+*.ster
+
+*.dta
+
 *.docx
 
-test_estimates_table_docx.do
+test_*
 
 test2_estimates_table_docx.do
 
 test_cox.do
 
 parameter.mata
-
-test_mata.do
 
 oldcode.mata
 
