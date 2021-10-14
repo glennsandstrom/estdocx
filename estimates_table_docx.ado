@@ -2,12 +2,17 @@
 /**TODO  **/
 /**************************************************************************/
 // * DONE:Implement a keep(coeflist) option and report coefficients in order specified
+// 
+// * DONE: Implement possibility to report 95%CI rather than p-values or both....
 //
-// * PARTIALLY: Implement eform option...fixed but does not ahdle multiple equation models such as'
+// * Format stats N with tousand number separator i.e. 1,000,000
+//
+// * PARTIALLY: Implement eform option to transform non exponatisated coefficients...
+//   fixed but does not handle multiple equation models such as'
 //   xtlogit with ancilliary paramters that should not be transformed. Program needs to honor the 
 //   equation name where free paramters have a different equation name, In r(table) all params 
 //   after / in the equation name are free paramters "Free parameters are scalar parameters, 
-//   variances, covariances, and the like that are part of them odel being fit"
+//   variances, covariances, and the like that are part of the model being fit"
 //   
 //   These should be handled differntly removed from the matrix of parameters and placed 
 //   in the stats matrix and handled separatly printed under each model. Asi the program work now
@@ -15,8 +20,8 @@
 //
 //
 // * BUG:if a variable has no valuelables program ends in Error st_vlmap():  3300  argument out of range
-// * BUG: if factor has more than single digit level program trows error
-//   for smoe reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
+// * BUG: if factor has more than single digit level program throws error
+//   for some reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
 //   Temporarly I comment this out but need to figure out why i did this in the first place
 //
 //
@@ -33,6 +38,8 @@
 // * Handle stratified variables in cox-regressions
 // 
 // * Implement option to set the titles of models
+//
+// * Implement a possibility to include a note below the regression table e.g. source comment etc.
 /**************************************************************************/
 /**SUB-ROUTINES  **/
 /**************************************************************************/
@@ -45,13 +52,13 @@
 		/** SET WIDTH OF THE TABLE                     **/
 		/**************************************************************************/
 		local nummodels :list sizeof models
-		// set the with of the table= nummodels + one rowheader column to display variable
+		// set the width of the table= nummodels + one rowheader column to display variable
 		// names and factor levels in case var is a factor
 		local COLUMNS= `nummodels' +1
 		/**************************************************************************/
 		/** CREATE THE WORDDOCUMENT THAT WILL HOLD THE TABLE                     **/
 		/**************************************************************************/
-			// clear any usaved documents from memory
+			// clear any unsaved documents from memory
 			putdocx clear
 			if "`landscape'"!="" putdocx begin, pagesize(`pagesize') landscape
 			else putdocx begin, pagesize(`pagesize')
