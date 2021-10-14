@@ -40,6 +40,8 @@
 // * Implement option to set the titles of models
 //
 // * Implement a possibility to include a note below the regression table e.g. source comment etc.
+//
+// * Implement an inline-mode that inserts table in document in memory rather than saves to a file
 /**************************************************************************/
 /**SUB-ROUTINES  **/
 /**************************************************************************/
