@@ -1,5 +1,7 @@
 #git ignore file
 
+/temp/*
+
 *.ster
 
 *.dta
