@@ -19,6 +19,7 @@ namelist
 {synoptline}
 {syntab:Main}
 {synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
+{synopt:{opt inline}}Add table to a docx in memory rather than standalone file.{p_end}
 {synopt:{opt title(string)}}Optional title for table.{p_end}
 {synopt:{opt b(%fmt)}}Stata format used for coefficients. Default is %9.2f{p_end}
 {synopt:{opt star(numlist)}}Numlist of significance levels. If option is omitted ci is reported numerically. {p_end}
@@ -39,20 +40,19 @@ namelist
 {pstd}
 
 {pstd}
- {cmd:estdocx} Takes a namelist of stored estimates and exports this to a publication
- quality table in MS Word. Although it is possible to export estimates to a table 
- using the command putdocx Stata 15 (i.e. putdocx table results = etable) This method causes 
- unwanted formatting issues in the resulting table such as e.g. hidden characters in cells
- making it difficult to choose alignment in the cells and the need to erase these characters.
- estdocx avoid such issues and allow some additional benefits by providing 
- options for the formating of the resulting table and inclusion of legend etc.
+{cmd:estdocx} takes a namelist of stored {cmd:estimates} and exports this 
+to a publication quality table in MS Word. Although it is possible to export estimates 
+to a table using the command {cmd:putdocx} avaliable since Stata v.15 i.e. putdocx table results =etable and since Stata v.17 through the collect suite of commands both of these options has some drawbacks. The simple built-in method of putdocx causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making it difficult to choose alignment in the cells and the need to erase these characters. estdocx avoid such issues and allows some additional benefits by providing options for the formatting of the resulting table and inclusion of legend etc. collect is a very powerful command but is quite complex and making the desired table requires quite a lot of coding. If the desired table is a multicolumn regression table estdocx is a much simpler way to produce the desired table with just one command.
 
 {marker options}{...}
 {title:Options}
 {dlgtab:Main}
 
 {phang}
-{opt saving(string)}Path/filename of the generated docx file.
+{opt saving(string)} Path/filename of the generated docx file. This option is not allowed in inline-mode where you rather set these options when you create the document in memory trough the putdocx-command.
+
+{phang}
+{opt inline} Used when you whnat to add the resulting table to an already instanisated docx in memory created with the {cmd:putdocx}-command
 
 {phang}
 {opt title(string)} Optional title for table.
@@ -76,10 +76,11 @@ Specify the the variables to be included as in estimation command but exclude le
 For Model 3 in examples you would specify age race collgrad wage grade tenure collgrad#race collgrad#tenure _cons
 
 {phang}
-{opt pagesize(psize)} Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Default is pagesize(A4)
+{opt pagesize(psize)} Set pagesize of Word document. psize may be letter, legal, A3, A4, or B4JIS. Default is pagesize(A4). This option is not allowed in inline-mode where you rather set these
+options when you create the document in memory trough the putdocx-command.
 
 {phang}
-{opt landscape} Use landscape layout for Word document.
+{opt landscape} Use landscape layout for Word document. This option is not allowed in inline-mode where you rather set these options when you create the document in memory trough the putdocx-command.
 
 {phang}
 {opt eform} Report parameters as exp(B).
