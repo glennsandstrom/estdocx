@@ -4,7 +4,8 @@
 {title:Title}
 {phang}
 {bf:estdocx} {hline 2} a command giving same functionality as estimates table 
-but exports results directly to a Word table
+but exports results directly to a MSWord-documnet in memory (created with putdocx) 
+or to a standalone docx-file.
 
 {marker syntax}{...}
 {title:Syntax}
@@ -124,6 +125,6 @@ Web:{browse "http://www.idesam.umu.se/english/about/staff/?uid=glsa0001"}
 
 
 {title:See Also}
-Related commands:
+Related commands: estimates table, putdocx
 
 
