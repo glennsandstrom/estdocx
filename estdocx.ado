@@ -535,12 +535,12 @@ program estdocx
 				local lab= subinstr("`label'", " ", "", .) //remove all whitespace
 				
 				local print : list posof "`lab'" in printed
-				//add a header row with variable label for factor variables that has been added tothe table
+				//add a header row with variable label for factor variables that has been added to the table
 				if !`print' {
 					// add header row with varname of factor variable
 					putdocx table esttable(`row',.), addrows(1)
 					local ++row
-					putdocx table esttable(`row',1) = ("`label'"), bold font(Garamond, 10) halign(left)
+					putdocx table esttable(`row',1) = ("`label'"), bold font(Garamond, 11) halign(left)
 					local printed "`printed' `lab'" //add varname to list of printed headers
 				}
 				
