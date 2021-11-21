@@ -11,19 +11,23 @@
 		}
 		
 		//start paragraph with format for Stata output
-		putdocx paragraph, halign(left) font(Consolas, 8) spacing(line, 0.16) ///
+		putdocx paragraph, halign(left) font(Consolas, 8) spacing(line, 0.18) ///
 		shading(ghostwhite , black,  clear)
 		
 		//open textfile with Stata output and read in lines to Word
 		file open x using "`using'", read
         file read x line
         while r(eof)==0 {
-				if strrpos("`line'",".")==1 {
-					//do not print line
+			//local line= strtrim("`line'")
+			if (regexm("`line'","^.?\s*$")){
+					//do not print line with just carraige returns
 				}
-				else {
-					putdocx text (`"  `line'"'), linebreak
+				else if (strmatch("`line'","* log *") ) {
+					//do not print line with call to log
                 }
+				else {
+					putdocx text (`"`line'"'), linebreak
+				}
 				file read x line
         }
 		
