@@ -20,10 +20,11 @@ namelist
 {synoptline}
 {syntab:Main}
 {synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
-{synopt:{opt inline}}Add table to a docx in memory rather than standalone file.{p_end}
+{synopt:{opt inline}}Add table to a docx in memory rather than saving to standalone file.{p_end}
 {synopt:{opt title(string)}}Optional title for table.{p_end}
 {synopt:{opt b(%fmt)}}Stata format used for coefficients. Default is %9.2f{p_end}
-{synopt:{opt star(numlist)}}Numlist of significance levels. If option is omitted ci is reported numerically. {p_end}
+{synopt:{opt star(numlist)}}Numlist of significance levels. If option is omitted significanse is reported numerically.{p_end}
+{synopt:{opt nop}}Do not report significanse levels.{p_end}
 {synopt:{opt ci(%fmt)}}Stata format used for 95% confidense intervals. If option is omitted no CIs are not reported. {p_end}
 {synopt:{opt stats(scalarlist)}}Report scalarlist in table. Allowed is N aic bic {p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
@@ -31,7 +32,6 @@ namelist
 {synopt:{opt pagesize(psize)}}Set pagesize of Word document.{p_end}
 {synopt:{opt landscape}}Use landscape layout for word document.{p_end}
 {synopt:{opt eform}}Report parameters as exp(B).{p_end}
-{synopt:{opt nop}}Do not report significanse levels.{p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}
@@ -53,7 +53,7 @@ to a table using the command {cmd:putdocx} avaliable since Stata v.15 i.e. putdo
 {opt saving(string)} Path/filename of the generated docx file. This option is not allowed in inline-mode where you rather set these options when you create the document in memory trough the putdocx-command.
 
 {phang}
-{opt inline} Used when you whnat to add the resulting table to an already instanisated docx in memory created with the {cmd:putdocx}-command
+{opt inline} Used when you want to add the resulting table to a docx in memory created by calling {cmd: putdocx begin [, options]}-command rather than saving to a standalone file. 
 
 {phang}
 {opt title(string)} Optional title for table.
@@ -62,7 +62,13 @@ to a table using the command {cmd:putdocx} avaliable since Stata v.15 i.e. putdo
 {opt b(%fmt)} Specifies how the coefficients are to be displayed. Default is %9.2f
 
 {phang}
-{opt star(numlist .05 .01 .001)} significanse levels. If stats(none) is passed pvalues are printed within parentheses with three decimal places.
+{opt star(numlist .05 .01 .001)} significanse levels. If option is not set pvalues are printed within parentheses with three decimal places. Significanse levels can be fully excluded if options {opt nop} is passed.
+
+{phang}
+{opt nop} Do not report significanse levels, used if you e.g. only want to show CIs.
+
+{phang}
+{opt ci(%fmt)} Stata format used for 95% confidense intervals. If option is omitted no CIs are not reported.
 
 {phang}
 {opt stats(scalarlist)} List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
@@ -86,11 +92,13 @@ options when you create the document in memory trough the putdocx-command.
 {phang}
 {opt eform} Report parameters as exp(B).
 
+
+
 {marker examples}{...}
 {title:Examples}
 
-    {hline}
-    Setup
+{hline}
+Setup
 {phang2}{cmd:. sysuse nlsw88, clear}{p_end}
 
 {pstd}Run estimation command{p_end}
@@ -111,9 +119,10 @@ options when you create the document in memory trough the putdocx-command.
 {pstd}Store third model using estimates{p_end}
 {phang2}{cmd:. estimates store _3_}
 
-{pstd}Run command to produce table in Word document estimates_table.docx{p_end}
-{phang2}{cmd:. estdocx base grade tenure, star(.05 .01 .001) b(.001) title("Table 1: Test title") baselevels}
-    {hline}
+{pstd}Run command to produce table in a standalone Word document with default name estdocx.docx{p_end}
+{phang2}{cmd:. estdocx base grade tenure}
+
+{hline}
 
 
 {title:Author}
