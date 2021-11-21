@@ -278,7 +278,7 @@
 				
 				
 				
-				// returns local param => strig with paramter, sig, CI depending on options passed
+				// returns local param => string with paramter, sig, CI depending on options passed
 				mata: get_param(`b', "`bfmt'", `p', "`star'", "`nop'", "`ci'", `ll', `ul') 
 				
 				putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left)
@@ -446,6 +446,7 @@ program estdocx
   
 	syntax namelist(min=1),	///
 		[saving(string)] ///
+		[inline] ///
 		[title(string)] ///
 		[b(string)] ///
 		[ci(string)] ///
@@ -456,8 +457,8 @@ program estdocx
 		[pagesize(string)] ///
 		[landscape] ///
 		[Nop] ///
-		[eform] ///
-		[inline]
+		[eform]
+		
 		
 		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is off
 		
@@ -855,7 +856,7 @@ void get_param(real scalar param, string scalar bfmt, real scalar sig, string sc
 				lowb= strofreal(ll, cifmt)
 				highb= strofreal(ul, cifmt)
 				ci= " (" + lowb + "-" + highb + ")"
-				// if there is a pvalue add that to the pramter in pertenthesis
+				// if there is a pvalue add that to the parameter in pertenthesis
 				if(lowb!=".") parameter= parameter + ci
 				
 			}	
