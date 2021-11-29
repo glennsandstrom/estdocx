@@ -4,6 +4,8 @@
 // * DONE:Implement a keep(coeflist) option and report coefficients in order specified
 // 
 // * DONE: Implement possibility to report 95%CI rather than p-values or both....
+// 
+// * DONE: Implement an inline-mode that inserts table in document in memory rather than saves to a file
 //
 // * Format stats N with tousand number separator i.e. 1,000,000
 //
@@ -41,7 +43,7 @@
 //
 // * Implement a possibility to include a note below the regression table e.g. source comment etc.
 //
-// * Implement an inline-mode that inserts table in document in memory rather than saves to a file
+// 
 /**************************************************************************/
 /**SUB-ROUTINES  **/
 /**************************************************************************/
@@ -760,7 +762,7 @@ struct paramvar parameter::parsevar(string scalar vartext){
 		
 		}
 		else {
-			_error(3300, "Parameter contains an non impelmented value(s)")
+			_error(3300, "Parameter contains an non implemented value(s)")
 		}
 		
 		// check that a varlabel is set else return varname in P.label
@@ -797,9 +799,9 @@ void parameter::print() {
 }
 
 
-/*###############################################################################################*/
+/*###########################################################################################*/
 // FUNCTIONS
-/*###############################################################################################*/
+/*###########################################################################################*/
 void get_param(real scalar param, string scalar bfmt, real scalar sig, string scalar star, string scalar nop, string scalar cifmt, real scalar ll, real scalar ul) {
 	// param is BETA
 	// sig is p-value
