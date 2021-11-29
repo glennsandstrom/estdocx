@@ -154,7 +154,7 @@
 		if("`keep'"=="") mata: models_varlist("`models'")
 		else mata: models_varlist("`models'", "`keep'")
 		
-		mata: model_beta_table("`models'", "`modelvars'")
+		mata: models_param_table("`models'", "`modelvars'")
 		
 		return local params "`modelvars'"
 		return scalar numparams= `numparams'
@@ -866,7 +866,7 @@ void get_param(real scalar param, string scalar bfmt, real scalar sig, string sc
 	st_local("param", parameter)
 }
 
-void model_beta_table(string scalar models, string scalar varlist){
+void models_param_table(string scalar models, string scalar varlist){
 	string scalar model, param
 	string vector this_models, this_varlist, rownames, colnames
 	real scalar a, b, c, nummodels, rowvarlist, rowmodel, col, mlenth, rowsum
