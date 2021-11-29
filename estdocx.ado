@@ -580,7 +580,7 @@ program estdocx
 	// print a legend with significance values
 	/**************************************************************************/
 	qui putdocx describe esttable
-	write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
+	if("`star'"!="none" & "`nop'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
 	/**************************************************************************/
 	/** Save worddocument             **/
 	/**************************************************************************/
