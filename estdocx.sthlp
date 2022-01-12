@@ -1,10 +1,10 @@
 {smcl}
-{* *! version 1.2.9.2 20200616 }{...}
-{right:version 1.2.9.2}
+{* *! version 1.0 2021-11-21 }{...}
+{right:version 1.0}
 {title:Title}
 {phang}
 {bf:estdocx} {hline 2} a command giving same functionality as estimates table 
-but exports results directly to a MSWord-documnet in memory (created with putdocx) 
+but exports results directly to a MSWord-document in memory (created with putdocx) 
 or to a standalone docx-file.
 
 {marker syntax}{...}
@@ -23,9 +23,9 @@ namelist
 {synopt:{opt inline}}Add table to a docx in memory rather than saving to standalone file.{p_end}
 {synopt:{opt title(string)}}Optional title for table.{p_end}
 {synopt:{opt b(%fmt)}}Stata format used for coefficients. Default is %9.2f{p_end}
-{synopt:{opt star(numlist)}}Numlist of significance levels. If option is omitted significanse is reported numerically.{p_end}
-{synopt:{opt nop}}Do not report significanse levels.{p_end}
-{synopt:{opt ci(%fmt)}}Stata format used for 95% confidense intervals. If option is omitted no CIs are not reported. {p_end}
+{synopt:{opt star(numlist)}}Numlist of significance levels. If option is omitted significance is reported numerically.{p_end}
+{synopt:{opt nop}}Do not report significance levels.{p_end}
+{synopt:{opt ci(%fmt)}}Stata format used for 95% confidence intervals. If option is omitted no CIs are not reported. {p_end}
 {synopt:{opt stats(scalarlist)}}Report scalarlist in table. Allowed is N aic bic {p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
 {synopt:{opt keep(coflist)}}List of coefficient to include in table.{p_end}
@@ -62,13 +62,13 @@ to a table using the command {cmd:putdocx} avaliable since Stata v.15 i.e. putdo
 {opt b(%fmt)} Specifies how the coefficients are to be displayed. Default is %9.2f
 
 {phang}
-{opt star(numlist .05 .01 .001)} significanse levels. If option is not set pvalues are printed within parentheses with three decimal places. Significanse levels can be fully excluded if options {opt nop} is passed.
+{opt star(numlist .05 .01 .001)} significance levels. If option is not set p-values are printed within parentheses with three decimal places. Significance levels can be fully excluded if options {opt nop} is passed.
 
 {phang}
-{opt nop} Do not report significanse levels, used if you e.g. only want to show CIs.
+{opt nop} Do not report significance levels, used if you e.g. only want to show CIs.
 
 {phang}
-{opt ci(%fmt)} Stata format used for 95% confidense intervals. If option is omitted no CIs are not reported.
+{opt ci(%fmt)} Stata format used for 95% confidence intervals. If option is omitted no CIs are not reported.
 
 {phang}
 {opt stats(scalarlist)} List of statistics from e() to be displayed at bottom of table. Currently aic, bic and N can be specified.
