@@ -1084,6 +1084,19 @@ string colvector keeping(string colvector unique, string scalar vars) {
 	return(this_unique)
 }
 
+
+
+void paramtype(string scalar param) {
+	class parameter scalar P
+	
+	P.setup(param)
+	st_local("paramtype", P.paramtype)
+	st_local("vlab", P.combvlab)
+	st_local("label", P.comblabel)
+
+
+}
+
 real scalar getindex(string scalar val, string vector names) {
 	real scalar i
 	//if a colvector is passed transpose to rowvector
@@ -1097,18 +1110,6 @@ real scalar getindex(string scalar val, string vector names) {
 			return(i)
 		}
 	}
-}
-
-
-void paramtype(string scalar param) {
-	class parameter scalar P
-	
-	P.setup(param)
-	st_local("paramtype", P.paramtype)
-	st_local("vlab", P.combvlab)
-	st_local("label", P.comblabel)
-
-
 }
 
 
