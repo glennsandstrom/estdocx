@@ -49,6 +49,16 @@ putdocx textblock begin, font (Garamond, 12)
 putdocx textblock end
 
 putdocx paragraph, style(Heading1)
+putdocx text (`"Manpage of the command"')
+
+putdocx textblock begin, font (Garamond, 12)
+Before diving into the more detailed examples a brief look at the main section of the helpfile for the command to have an overview of the available options for the command can be helpful.
+putdocx textblock end
+
+putdocx paragraph, halign(center)
+putdocx image manpage.png
+
+putdocx paragraph, style(Heading1)
 putdocx text (`"A simple first example"')
 
 putdocx textblock begin, font (Garamond, 12)
@@ -113,14 +123,18 @@ putdocx textblock end
 stata_output_docx using "temp\command2.txt"
 
 estdocx _1_ _2_ _3_, ///
-title("Table 2: Vervose significance levels") ///
-stats(N aic bic) ///
+title("Table 2: Verbose significance levels") ///
 inline
 
 estdocx _1_ _2_ _3_, ///
 title("Table 2: Report confidence intervals") ///
-stats(N aic bic) ///
 star(.05 .01 .001) ///
+ci(%9.2f) ///
+inline
+
+estdocx _1_ _2_ _3_, ///
+title("Table 2: Report confidence intervals only") ///
+nop ///
 ci(%9.2f) ///
 inline
 
