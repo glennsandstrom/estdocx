@@ -1,6 +1,8 @@
 #git ignore file
 
 /temp/*
+/Archive/*
+/Tests/*
 
 *.ster
 
@@ -9,13 +11,3 @@
 *.docx
 
 test_*
-
-test2_estdocx.do
-
-test_cox.do
-
-parameter.mata
-
-oldcode.mata
-
-dev-code-free-parameters.txt

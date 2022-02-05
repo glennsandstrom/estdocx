@@ -50,7 +50,6 @@
 	/*########################################################################*/
 	//capture program drop create_docx
 		
-**# Bookmark #2
 	program create_docx
 		version 15.1
 		syntax [namelist(name=models)], pagesize(string) [landscape]
@@ -121,6 +120,7 @@
 	  
 		syntax namelist(min=1),	///
 		[keep(string)]
+**# Bookmark #2
 		
 		local models= "`namelist'" //space sparated list of estimates
 			
@@ -657,7 +657,6 @@ class parameter {
 	
 		
 }
-
 	void parameter::setup(string scalar user_txt) {
 		real scalar i
 		struct paramvar scalar P
@@ -724,7 +723,6 @@ class parameter {
 			this.paramtype= this.vars[1].vartype
 		}
 	}
-
 	struct paramvar parameter::parsevar(string scalar vartext){
 			struct paramvar scalar P
 			real scalar rcode
@@ -792,7 +790,6 @@ class parameter {
 			
 			return(P)
 	}
-
 	void parameter::print() {
 		real scalar i
 			printf("{txt}___________________________________________________________\n")
@@ -822,7 +819,6 @@ class parameter {
 /**************************************************************************/
 // CLASS rowvarlist
 /**************************************************************************/
-
 class rowvarlist {
 	public:
 		//public vars
@@ -847,9 +843,9 @@ class rowvarlist {
 	
 	
 }
-	/*########################################################################*/
+	/*########################################################################
 	// CLASS rowvarlist FUNCTIONS
-	/*########################################################################*/
+	########################################################################*/
 	/***************************************************************************
 	Function takes a vector of all paramters in all models and returns the unique
 	list of pramameters with all duplicates removed => function as the rows
@@ -923,8 +919,6 @@ class rowvarlist {
 			return(uvarnames)
 					
 	}
-
-
 
 /*###########################################################################################*/
 // FUNCTIONS
@@ -1165,8 +1159,8 @@ void models_varlist(string scalar models, |string scalar cofkeep){
 	//"uniqrows is:"
 	//test= uniqrows(allvars) 
 	//test
-	//"uniqe is:"
-	//unique
+	"uniqe is:"
+	unique
 	
 	
 	//IMPLEMENT KEEP OPTION HERE
