@@ -150,11 +150,15 @@
 			
 		}
 		
-		// call mata to form the matrix with model parameters
+		// set macro modelvars defiening the rowvarlist that makes up 
+		// the rows of the table
 		if("`keep'"=="") mata: models_varlist("`models'")
 		else mata: models_varlist("`models'", "`keep'")
 		
+		// call mata to form the matrix with model parameters
 		mata: models_param_table("`models'", "`modelvars'")
+		
+		di "`modelvars'"
 		
 		return local params "`modelvars'"
 		return scalar numparams= `numparams'
@@ -970,12 +974,14 @@ void models_param_table(string scalar models, string scalar varlist){
 	st_matrixcolstripe("model_ul", this_models)
 	st_matrixcolstripe("eform", this_models)
 }
+//# Bookmark #1
 
 void models_varlist(string scalar models, |string scalar cofkeep){
 	string scalar model, param, level
 	string vector this_models
 	real scalar i, ii, found, nummodels
 	string matrix rownames, allvars, unique
+	string colvector constants
 	
 	// convert string scalar to string vector
 	this_models= tokens(models)
@@ -1015,18 +1021,30 @@ void models_varlist(string scalar models, |string scalar cofkeep){
 		for (ii=1; ii<=length(unique); ii++) {
 			if (strmatch(unique[ii,1], param)) found=1				
 		}
+		
+		// first check if param is a constant or ancilliary
+		if(strmatch("_cons", param)) {
+			constants= constants\param
+			found=1
+		}
+			
+		
 		//if param is not already in list add it to vector unique and string parameters
 		//printf("{txt}param: {res}%s {txt}found: {res}%f\n", param, found)
 		if(!found){
 			unique= unique\param
 			}
 	}
+	
+	// add constants to the end of the rowvarlist
+	unique= unique\uniqrows(constants)
+	
 	//"uniqrows is:"
 	//test= uniqrows(allvars) 
 	//test
 	//"uniqe is:"
 	//unique
-	//printf("{txt}Content of pramaters is {res}%s\n", paramaters)
+	
 	
 	//IMPLEMENT KEEP OPTION HERE
 	// function taking colvector unique as argument and returning sorted and
