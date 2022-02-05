@@ -1,5 +1,84 @@
+/**************************************************************************/
+/**TODO  **/
+/**************************************************************************/
+// * DONE:Implement a keep(coeflist) option and report coefficients in order specified
+// 
+// * DONE: Implement possibility to report 95%CI rather than p-values or both....
+// 
+// * DONE: Implement an inline-mode that inserts table in document in memory rather than saves to a file
+//
+// * Format stats N with tousand number separator i.e. 1,000,000
+//
+// * PARTIALLY: Implement eform option to transform non exponatisated coefficients...
+//   fixed but does not handle multiple equation models such as'
+//   xtlogit with ancilliary paramters that should not be transformed. Program needs to honor the 
+//   equation name where free paramters have a different equation name, In r(table) all params 
+//   after / in the equation name are free paramters "Free parameters are scalar parameters, 
+//   variances, covariances, and the like that are part of the model being fit"
+//   
+//   These should be handled differntly removed from the matrix of parameters and placed 
+//   in the stats matrix and handled separatly printed under each model. Asi the program work now
+//   it print also the free paramters in eform wich is an error.
+//
+//
+// * BUG:if a variable has no valuelables program ends in Error st_vlmap():  3300  argument out of range
+// * BUG: if factor has more than single digit level program throws error
+//   for some reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
+//   Temporarly I comment this out but need to figure out why i did this in the first place
+//
+//
+// * Implement additonal signs for significanse with dagger mark as e.g. style
+//   in Demography.
+//
+// * Implement higher order interactions than 2-way.... Simplify the functions paramtype
+//   Only needs to return factor, factor-interaction (includes factor#continious), 
+//   continious (includes constants, continious-interactions)
+//	 Goal is to simplifiy the forming of rowlabels for differnt types of interacations
+//   and to handle situations when there are either no label or no value-labels
+//   assossiated to one or more variables/levels in the paramteter that forms the row of the table
+//
+// * Handle stratified variables in cox-regressions
+// 
+// * Implement option to set the titles of models
+//
+// * Implement a possibility to include a note below the regression table e.g. source comment etc.
+//
+// 
+/*###############################################################################################*/
+/**SUB-ROUTINES  **/
+/*###############################################################################################*/
+program load_estimates_to_frame
+	version 17
+	  
+		syntax namelist(min=1)
+		
+		local models= "`namelist'" //space sparated list of estimates
+			
+		//loop over models to and check that they are valid estiamte names avalaible in memory
+		foreach model in `models' {
+				
+			if _rc==111 {
+				di _newline(3)  
+				di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
+				di _newline  
+				di as result "The estimates currently stored in memory are:" 
+				estimates dir
+				exit _rc
+			}
+			
+		}
+**# Bookmark #1
+		
+		// create frame to hold the regression table
+		tempname frname 
+		frame create `frname'
+		frame change `frname'
+		
+		mata: create_frame_table(`models')
 
 
+		
+	end
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
@@ -46,6 +125,13 @@ program estdocx
 	if ("`stats'"=="") local stats "N" // set default stat N if stats is not provided
 	if ("`stats'"=="none") local stats "" // set stat null string if stat(none)
 	
+
+	
+	/**************************************************************************/
+	/** Call MATA to set up frame with the desired regression table **/
+	/**************************************************************************/
+	load_estimates_to_frame `models'
+
 	/**************************************************************************/
 	/** CREATE TABLE                     **/
 	/**************************************************************************/
@@ -55,12 +141,6 @@ program estdocx
 	create_table `models', pagesize(`pagesize') title(`title') `landscape' 
 	//putdocx describe esttable
 	
-	/**************************************************************************/
-	/** Call MATA to set up frame with the desired regression table **/
-	/**************************************************************************/
-	if("`keep'"=="") get_models `models'
-	else get_models `models', keep(`keep')
-
 	/**************************************************************************/
 	/** PRINT THE TABLE FROM FRAME */
 	/**************************************************************************/
@@ -125,20 +205,27 @@ version 17
 mata: mata set matastrict on
 mata: mata set matalnum on
 
+// macroed types
+local Boolean real
+local True    1
+local False   0
+local SS      string scalar
+local SCV     string colvector
+local RS      real scalar
+
 mata:
 /*#######################################################################################*/
 // STRUCTURES
 /*#######################################################################################*/
 struct model {
 	real matrix rtable
-	string vector params, stats
+	string colvector params, stats
 
 
 }
 /*#######################################################################################*/
 // CLASS rowvarlist
 /*#######################################################################################*/
-
 class rowvarlist {
 	public:
 		//public vars
@@ -157,13 +244,83 @@ class rowvarlist {
 		
 		//private functions
 		string colvector get_uniqvarnames()
-		
-	
-	
-	
-	
 }
+	/*#######################################################################################*/
+	// CLASS rowvarlist FUNCTIONS
+	/*#######################################################################################*/
+	/***************************************************************************
+	Function takes a vector of all paramters in all models and returns the unique
+	list of pramameters with all duplicates removed => function as the rows
+	of the regression table
+	****************************************************************************/
+	void rowvarlist::setup(string colvector allparams) {
 
+	real scalar i, ii, found
+	string scalar param, varname, prefix, find
+		
+		//declare colvector allvars
+		this.constants= J(0, 1, "")
+		
+		// get the unique set of varnames in models with prefix stripped
+		this.uvarnames= get_uniqvarnames(allparams)
+		
+		for (i=1; i<=length(this.uvarnames); i++) {
+			// check if varname is a constant or free and at it to constants if not already there
+			if(regexm(this.uvarnames[i], "^[_/]") & !anyof(this.constants, this.uvarnames[i])) this.constants=this.constants\this.uvarnames[i]
+					
+			find= "[0-9]*[obc]*\." + this.uvarnames[i] 
+			//loop over complete list of parameters
+			for (ii=1; ii<=length(allparams); ii++) {
+				// check if the varname match find and it it to unique if not already there
+				if(regexm(allparams[ii], find) & !anyof(this.unique, allparams[ii])) {
+					//printf("{txt}pattern: {res}%s {txt}mathed to: {res}%s\n", find, allparams[ii])
+					this.unique= this.unique\allparams[ii]
+				}
+			}
+			
+		}
+
+		
+		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
+		this.unique= this.unique\this.constants
+		
+	}
+	/***************************************************************************
+	Function takes of all paramters in all models and returns the unique varnames
+	found in the list of complete stack of paramters
+	****************************************************************************/
+	string colvector rowvarlist::get_uniqvarnames(allparams) {
+
+	string colvector allvarnames, uvarnames
+	string scalar param, vars, var
+	real scalar i, ii
+
+		allvarnames= J(0, 1, "")
+		
+			// remove numbers and letters before up until and including .
+			for (i=1; i<=length(allparams); i++) {
+				param= allparams[i,1]
+				// for each mach of prefix remove it until non are left
+				while(regexm(param, "[0-9]*[obc]*\.")) param= regexr(param, "[0-9]*[obc]*\.", "")
+				//split by # into vector of varnames in the parameter
+				vars= tokens(param, "#")
+				for (ii=1; ii<=length(vars); ii++) {
+					// add the var to varnames with the prefix removed
+					if(vars[ii]!="#") allvarnames= allvarnames\vars[ii]
+				}
+			}
+			
+			// remove all duplicate varnames
+			uvarnames= J(0, 1, "")
+			for (i=1; i<=length(allvarnames); i++) {
+				var= allvarnames[i,1]
+				// check if cof is already in uvarnames and add it if it is not
+				if(!anyof(uvarnames, var)) uvarnames= uvarnames\var
+			}
+			
+			return(uvarnames)
+					
+	}
 /*#######################################################################################*/
 // CLASS estdocxtable
 /*#######################################################################################*/
@@ -174,7 +331,9 @@ class estdocxtable {
 		class rowvarlist scalar rowvarlist    // computes the uniq ordered list of pramaters that for row of table
 		string scalar parameters              // uniq ordered list of pramaters
 		string scalar varnames                // uniq ordered list of varnames
-		real scalar maxparamlength
+		string scalar fname
+		real scalar   maxparamlength
+		
 		//public functions
 		void setup()                          // setup takes a namlist of stored estimates
 		real scalar get_stat()
@@ -188,9 +347,10 @@ class estdocxtable {
 		void create_display()
 }
 /*#######################################################################################*/
+//# Bookmark #2
 // CLASS estdocxtable FUNCTIONS
 /*#######################################################################################*/
-	void estdocxtable::setup(string scalar models) {
+	void estdocxtable::setup(`SS' models) {
 		struct model scalar mod // structure holding 
 		
 		real scalar i, ii, iii, maxparamlength
@@ -265,7 +425,6 @@ class estdocxtable {
 			return(mod)
 
 	}
-	
 	/***************************************************************************
 	F
 	****************************************************************************/
@@ -278,21 +437,18 @@ class estdocxtable {
 	}
 	
 	/***************************************************************************
-	Funktion writes paramters for all models to dataframe
+	Function writes paramters for all models to dataframe
 	****************************************************************************/
 	void estdocxtable::create_display() {
 		string matrix table
 		string scalar cframename, dispname, colwidh
 		real scalar i, ii, mpl, c
 		
-		cframename= st_framecurrent()
+		//cframename= st_framecurrent()
 		//cframename
 		//dispname= st_tempname()
 		//if(st_frameexists(dispname)) _error("Can´t create display frame as frame with the anme already exists")
 		//st_framecreate(dispname)
-		
-		st_framedir()
-		st_framecurrent("_test")
 		
 		//find maximum number of characthers of in parameters
 		mpl=max(strlen(this.parameters))
@@ -322,95 +478,25 @@ class estdocxtable {
 		
 
 	}
-/*#######################################################################################*/
-// CLASS rowvarlist FUNCTIONS
-/*#######################################################################################*/
-	/***************************************************************************
-	Function takes a vector of all paramters in all models and returns the unique
-	list of pramameters with all duplicates removed => function as the rows
-	of the regression table
-	****************************************************************************/
-	void rowvarlist::setup(string colvector allparams) {
 
-	real scalar i, ii, found
-	string scalar param, varname, prefix, find
-		
-		//declare colvector allvars
-		this.constants= J(0, 1, "")
-		
-		// get the unique set of varnames in models with prefix stripped
-		this.uvarnames= get_uniqvarnames(allparams)
-		
-		for (i=1; i<=length(this.uvarnames); i++) {
-			// check if varname is a constant or free and at it to constants if not already there
-			if(regexm(this.uvarnames[i], "^[_/]") & !anyof(this.constants, this.uvarnames[i])) this.constants=this.constants\this.uvarnames[i]
-					
-			find= "[0-9]*[obc]*\." + this.uvarnames[i] 
-			//loop over complete list of parameters
-			for (ii=1; ii<=length(allparams); ii++) {
-				// check if the varname match find and it it to unique if not already there
-				if(regexm(allparams[ii], find) & !anyof(this.unique, allparams[ii])) {
-					//printf("{txt}pattern: {res}%s {txt}mathed to: {res}%s\n", find, allparams[ii])
-					this.unique= this.unique\allparams[ii]
-				}
-			}
-			
-		}
 
-		
-		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
-		this.unique= this.unique\this.constants
-		
-	}
-	/***************************************************************************
-	Function takes of all paramters in all models and returns the unique varnames
-	found in the list of complete stack of paramters
-	****************************************************************************/
-	string colvector rowvarlist::get_uniqvarnames(allparams) {
-
-	string colvector allvarnames, uvarnames
-	string scalar param, vars, var
-	real scalar i, ii
-
-		allvarnames= J(0, 1, "")
-		
-			// remove numbers and letters before up until and including .
-			for (i=1; i<=length(allparams); i++) {
-				param= allparams[i,1]
-				// for each mach of prefix remove it until non are left
-				while(regexm(param, "[0-9]*[obc]*\.")) param= regexr(param, "[0-9]*[obc]*\.", "")
-				//split by # into vector of varnames in the parameter
-				vars= tokens(param, "#")
-				for (ii=1; ii<=length(vars); ii++) {
-					// add the var to varnames with the prefix removed
-					if(vars[ii]!="#") allvarnames= allvarnames\vars[ii]
-				}
-			}
-			
-			// remove all duplicate varnames
-			uvarnames= J(0, 1, "")
-			for (i=1; i<=length(allvarnames); i++) {
-				var= allvarnames[i,1]
-				// check if cof is already in uvarnames and add it if it is not
-				if(!anyof(uvarnames, var)) uvarnames= uvarnames\var
-			}
-			
-			return(uvarnames)
-					
-	}
-
-/*###############################################################################################*/
+/*###############################################################################################
 // FUNCTIONS
-/*###############################################################################################*/
+###############################################################################################*/
+
+void create_frame_table(`SS' models) {
+	class estdocxtable scalar table
+	
+	table.setup(models)
+	
+}
 
 
 
 
 
 
-
-
-
+end
 
 
 
