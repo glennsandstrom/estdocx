@@ -28,8 +28,7 @@ program estdocx
 		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is off
 		
 
-// di "main: nop: `nop'"
-// di "main: eform: `eform'"
+
 	// set local holding the names of estimates to be reported in table
 	local models= "`namelist'" //space separated list of estimates
 	
@@ -55,85 +54,50 @@ program estdocx
 	// then create the table in the document currenlty in memory
 	create_table `models', pagesize(`pagesize') title(`title') `landscape' 
 	//putdocx describe esttable
+	
 	/**************************************************************************/
-	/** Get unique varlist from estimates for each of the specified models **/
+	/** Call MATA to set up frame with the desired regression table **/
 	/**************************************************************************/
 	if("`keep'"=="") get_models `models'
 	else get_models `models', keep(`keep')
-	// returns 
-	// 1. r(params)= MACRO STRING nicley formated list of unique paramters making 
-	//    up rows in the returned matrix 
-	// 2. r(numparams)= SCALAR Number of paramters
-	// 3. r(model_betas) MATRIX beta of all models
-	// 4. r(model_p) MATRIX pvalues of all models
-	// 5. r(model_ll) MATRIX lower CI of all models
-	// 6. r(model_ul) MATRIX upper CI of all models
-	// 7. r(model_eform) MATRIX of bolean values indicating if parameter is in eform or not
+
 	/**************************************************************************/
-	/** PRINT ALL THE UNIQUE VARIABLES OCCURING IN THE MODELS AND THEIR LEVELS*/
+	/** PRINT THE TABLE FROM FRAME */
 	/**************************************************************************/
-	local row= 1
-	local betarow= 1
-	local rows: rowsof r(model_betas) // rows of full table
-	// Here I fetch the full rowvarlist for the complete table ex.
-	// 1bn.race 2.race 3.race age 0bn.collgrad 1.collgrad that I loop over
-	// and print each paramter/row of the full table
-	local varlist: rowvarlist r(model_betas)
+/*	
+//create worddoc 
+	putdocx clear
+	putdocx begin, pagesize(A4) 
+	putdocx paragraph, halign(left)
+	putdocx text ("Table 1: "), bold font(Garamond, 13)
+	putdocx text ("Models" ), font(Garamond, 13) 
+
+	// create the header rows of the table 
+	putdocx table tab1 = (1, 4), ///
+	border(start, nil) ///
+	border(top, nil) ///
+	border(insideH, nil) ///
+	border(insideV, nil) ///
+	border(end, nil) ///
+	halign(left) layout(autofitcontents)
+	putdocx table tab1(1,1) = ("Variable"), bold font(Garamond, 11) halign(left)
+	putdocx table tab1(1,2) = ("Model 1"), bold font(Garamond, 11) halign(center)
+	putdocx table tab1(1,3) = ("Model 2"), bold font(Garamond, 11) halign(center)
+	putdocx table tab1(1,4) = ("Model 3"), bold font(Garamond, 11) halign(center)
 	
-	foreach var in `varlist' {
-			
-		/**************************************************************************/	
-		// Check the type of the parameter 1. CONTINIOUS/CONS 2. FACTOR 3.INTERACTION 
-		/**************************************************************************/
-		// get the type of paramter and the full label and value label to print
-		// in the row, differntiate between base levels and parmaters that are not 1|0
-		mata: paramtype("`var'") //returns locals: paramtype, label, vlab
-// 		di "var= `var'"
-// 		di "paramtype= `paramtype'"
-// 		di "label= `label'"
-// 		di "vlab= `vlab'"
-		// print paratmters that are facors or intercations including factors that have 
-		// more than one level
-		if "`paramtype'"=="factor" | "`paramtype'"=="factor-interaction"{
-			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
-			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
-				//check if varname is in the list of printed varnames
-				local lab= subinstr("`label'", " ", "", .) //remove all whitespace
-				
-				local print : list posof "`lab'" in printed
-				//add a header row with variable label for factor variables that has been added to the table
-				if !`print' {
-					// add header row with varname of factor variable
-					putdocx table esttable(`row',.), addrows(1)
-					local ++row
-					putdocx table esttable(`row',1) = ("`label'"), bold font(Garamond, 11) halign(left)
-					local printed "`printed' `lab'" //add varname to list of printed headers
-				}
-				
-				// print row with factor parameters 
-				write_level `models', row(`row') var(`var') vlab(`vlab') bfmt(`b') star("`star'") ci("`ci'") `eform' `nop'
-				local ++row
-			}
-		}
-		// here paramtype should return continious
-		else if "`paramtype'"=="continious" | "`paramtype'"=="continious-interaction" | "`paramtype'"=="const" {
-		
-			write_continious `models', row(`row') var(`var') varlabel(`label') bfmt(`b') star("`star'") ci("`ci'") `eform' `nop'
-			local ++row
-			local printed "`printed' `lab'"
-				
-		}
-		else {
-			di as error "{error} Program does not support this type of parameter"
-		
-		}
-	local ++betarow
-	}
+local rows= _N
+local rt= 1
+forvalues rd= 1(1)`rows' {
 	
-	// set border on bottom of header row of table
-	putdocx table esttable(1,.), border(bottom)
-	// set border at bottom beta table
-	putdocx table esttable(`row',.), border(bottom)
+	putdocx table tab1(`rd',.), addrows(1, after) // add a row to the table
+	local ++rt
+	putdocx table tab1(`rt',1) = (params[`rd']), font(Garamond, 10) halign(center)
+
+}
+
+putdocx save temp/estocx.docx, replace
+*/	
+	
 	
 	/**************************************************************************/	
 	// ADD STATS TO BOTTOM OF TABLE IF stats!=null
@@ -145,7 +109,7 @@ program estdocx
 	qui putdocx describe esttable
 	if("`star'"!="none" & "`nop'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
 	/**************************************************************************/
-	/** Save worddocument             **/
+	/** Save worddocument if program is not in inline mode           **/
 	/**************************************************************************/
 	//putdocx describe esttable
 	if("`inline'"=="") putdocx save "`saving'", replace
