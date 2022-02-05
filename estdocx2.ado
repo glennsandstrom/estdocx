@@ -435,75 +435,9 @@ class estdocxtable {
 					
 	}
 
-
-
-/*#######################################################################################*/
+/*###############################################################################################*/
 // FUNCTIONS
-/*#######################################################################################*/
-void test_table(){
-	class estdocxtable scalar tab
-
-	tab.setup("men1830 wom1830 men1905 wom1905") // setup takes a namlist of stored estimates
-	//tab.varnames
-	//tab.paramters
-	tab.get_stat("men1830", "39.ageL1", "b")
-	
-}
-
-test_table()
-
-//code that puts all stats of rtable in array
-/*
-		for (ii=1; ii<=length(mod.stats); ii++) {
-			for (i=1; i<=length(mod.params); i++) {
-				this.table.put((this.models[iii], mod.stats[ii], mod.params[i]), mod.rtable[i,ii])
-				//printf("{txt}%s  {res}%f\n",mod.params[i], mod.rtable[i,1])
-			}
-		}*/
-		
-		
-/*
-	this.tab.get(("M1","2.race"))
-	keys= sort(this.tab.keys(), 2)
-	keys= keys[.,2]
-	keys
-	sort(uniqrows(keys), 1)
-*/
-
-end
-
-//create worddoc 
-	putdocx clear
-	putdocx begin, pagesize(A4) 
-	putdocx paragraph, halign(left)
-	putdocx text ("Table 1: "), bold font(Garamond, 13)
-	putdocx text ("Models" ), font(Garamond, 13) 
-
-	// create the header rows of the table 
-	putdocx table tab1 = (1, 4), ///
-	border(start, nil) ///
-	border(top, nil) ///
-	border(insideH, nil) ///
-	border(insideV, nil) ///
-	border(end, nil) ///
-	halign(left) layout(autofitcontents)
-	putdocx table tab1(1,1) = ("Variable"), bold font(Garamond, 11) halign(left)
-	putdocx table tab1(1,2) = ("Model 1"), bold font(Garamond, 11) halign(center)
-	putdocx table tab1(1,3) = ("Model 2"), bold font(Garamond, 11) halign(center)
-	putdocx table tab1(1,4) = ("Model 3"), bold font(Garamond, 11) halign(center)
-	
-local rows= _N
-local rt= 1
-forvalues rd= 1(1)`rows' {
-	
-	putdocx table tab1(`rd',.), addrows(1, after) // add a row to the table
-	local ++rt
-	putdocx table tab1(`rt',1) = (params[`rd']), font(Garamond, 10) halign(center)
-
-}
-
-putdocx save temp/estocx.docx, replace
-	winexec $wordpath "temp/estocx.docx"
+/*###############################################################################################*/
 
 
 
