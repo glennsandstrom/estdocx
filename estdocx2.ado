@@ -79,6 +79,24 @@ program load_estimates_to_frame
 
 		
 	end
+	/*########################################################################*/
+	program check_stats
+		version 15.1
+		syntax anything(name=statlist id="Statistics"), allowed(string)
+		
+		foreach stat in `statlist' {
+			// get postion of stat in list of allowed statistics
+			local i : list posof "`stat'" in allowed
+			if(!`i') {
+				di _newline(3)  
+				di as error "ERROR: `stat' is not an allowed statistic in option stats()"
+				di _newline  
+				error 197
+			
+			}
+		}
+	end
+	/*########################################################################*/
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
