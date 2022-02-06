@@ -47,35 +47,6 @@
 /*###############################################################################################*/
 /**SUB-ROUTINES  **/
 /*###############################################################################################*/
-program load_estimates_to_frame
-	version 17
-	  
-		syntax namelist(min=1)
-		
-		local models= "`namelist'" //space sparated list of estimates
-			
-		//loop over models to and check that they are valid estiamte names avalaible in memory
-		foreach model in `models' {
-				
-			if _rc==111 {
-				di _newline(3)  
-				di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
-				di _newline  
-				di as result "The estimates currently stored in memory are:" 
-				estimates dir
-				exit _rc
-			}
-			
-		}
-
-		
-**# Bookmark #1
-
-		mata: create_frame_table("`models'")
-
-
-		
-	end
 	/*########################################################################*/
 	program check_stats
 		version 15.1
@@ -104,7 +75,7 @@ program estdocx
 		[saving(string)] ///
 		[inline] ///
 		[title(string)] ///
-		[b(string)] ///
+		[bfmt(string)] ///
 		[ci(string)] ///
 		[star(string)] ///
 		[stats(string)] ///
@@ -122,13 +93,27 @@ program estdocx
 
 	// set local holding the names of estimates to be reported in table
 	local models= "`namelist'" //space separated list of estimates
+	//loop over models to and check that they are valid estimation result names avalaible in memory
+
+	qui estimates dir
+	local estimates= r(names)
+	foreach model in `models' {
+		if(!strmatch("`estimates'", "*`model'*")) {
+		di _newline(3)  
+		di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
+		di _newline  
+		di as result "The estimates currently stored in memory are:" 
+		exit _rc
+		}
+			
+	}
 	
 	// set local holding list of allowed statistics
 	local allowed "none N aic bic"
 	
 	// default values for options if none are provided
 	if ("`star'"=="") local star "none" // default is to report numerical p-value in pertenthesis
-	if ("`b'"=="") local b "%04.2f"
+	if ("`bfmt'"=="") local b "%04.2f"
 	if ("`saving'"=="") local saving "estimates_table.docx"
 	if ("`pagesize'"=="") local pagesize "A4"
 	
@@ -138,25 +123,37 @@ program estdocx
 	if ("`stats'"=="none") local stats "" // set stat null string if stat(none)
 	
 
-	
 	/**************************************************************************/
 	/** Call MATA to set up frame with the desired regression table **/
 	/**************************************************************************/
-	load_estimates_to_frame `models'
+	
 
+
+		
+**# Bookmark #1
+
+		mata: create_frame_table("`models'",     /// 
+		                         "`keep'",       ///
+								 "`bfmt'",       ///
+								 "`ci'",         /// 
+								 "`star'",       ///
+								 "`baselevels'", ///
+								 " `Nop'",       ///
+								 "`eform'"       ///
+								 )
+	
+/*
 	/**************************************************************************/
 	/** CREATE TABLE                     **/
 	/**************************************************************************/
 	// if !inline first create docx in memory to hold the table
 	if("`inline'"=="") create_docx , pagesize(`pagesize') `landscape'
-	// then create the table in the document currenlty in memory
-	create_table `models', pagesize(`pagesize') title(`title') `landscape' 
-	//putdocx describe esttable
+	
 	
 	/**************************************************************************/
 	/** PRINT THE TABLE FROM FRAME */
 	/**************************************************************************/
-/*	
+	
 //create worddoc 
 	putdocx clear
 	putdocx begin, pagesize(A4) 
@@ -504,11 +501,53 @@ class estdocxtable {
 // FUNCTIONS
 ###############################################################################################*/
 
-void create_frame_table(`SS' models) {
+void create_frame_table(`SS' models,
+                      | `SS' keep,
+		                `SS' bfmt,
+		                `SS' ci,
+		                `SS' star,
+		                `SS' baselevels,
+		                `SS' Nop,
+		                `SS' eform
+		                ) {
+	//declare function objects, structures and variables						
 	class estdocxtable scalar table
 	
-	table.setup(models)
+	printf("{txt}Number of arguments are: {res}%f\n", args())
 	
+	
+	if(bfmt=="") bfmt= "%04.2f"
+
+	print_opts(models, keep, bfmt, ci, star, baselevels, Nop, eform)
+	
+	
+	table.setup(models)
+	table.create_display_frame()
+	
+	
+	
+}
+
+
+void print_opts(`SS' models,
+              | `SS' keep,
+		        `SS' bfmt,
+		        `SS' ci,
+		        `SS' star,
+		        `SS' baselevels,
+		        `SS' Nop,
+		        `SS' eform
+		        ) {
+	printf("{txt}--- Models: --------------------------------------\n")
+	models
+	printf("{txt}--------------------------------------------------\n")
+	printf("{txt}keep is:{result} %s\n", keep)
+	printf("{txt}bfmt is:{result} %s\n", bfmt)
+	printf("{txt}ci is:{result} %s\n", ci)
+	printf("{txt}star is:{result} %s\n", star)
+	printf("{txt}Nop is:{result} %s\n", Nop)
+	printf("{txt}eform is:{result} %s\n", eform)
+	printf("{txt}__________________________________________________\n")
 }
 
 
