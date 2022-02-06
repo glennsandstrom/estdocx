@@ -343,8 +343,9 @@ class estdocxtable {
 		real scalar   maxparamlength
 		
 		//public functions
-		void setup()                          // setup takes a namlist of stored estimates
-		real scalar get_stat()
+		void        setup()                          // setup takes a namlist of stored estimates
+		`RS'        get_stat()
+		void        create_display_frame()
 		
 	private:
 		//private vars
