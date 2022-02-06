@@ -85,7 +85,7 @@ program estdocx
 		[landscape] ///
 		[Nop] ///
 		[eform]
-		
+
 		
 		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is off
 		
@@ -185,8 +185,7 @@ forvalues rd= 1(1)`rows' {
 }
 
 putdocx save temp/estocx.docx, replace
-*/	
-	
+
 	
 	/**************************************************************************/	
 	// ADD STATS TO BOTTOM OF TABLE IF stats!=null
@@ -207,7 +206,7 @@ putdocx save temp/estocx.docx, replace
 	/** Garbage collection             **/
 	/**************************************************************************/
 	//matrix drop _all
-
+*/
 end
 
 version 17
@@ -359,7 +358,7 @@ class estdocxtable {
 //# Bookmark #2
 // CLASS estdocxtable FUNCTIONS
 /*#######################################################################################*/
-	void estdocxtable::setup(`SS' models) {
+	void estdocxtable::setup(`SS' models, |string scalar debug) {
 		struct model scalar mod // structure holding 
 		
 		real scalar i, ii, iii, maxparamlength
@@ -406,7 +405,7 @@ class estdocxtable {
 		//this.rtables.exists(test)
 		//this.rtables.get(test)
 		
-		this.create_display()
+		
 		
 		
 		
@@ -448,7 +447,7 @@ class estdocxtable {
 	/***************************************************************************
 	Function writes paramters for all models to dataframe
 	****************************************************************************/
-	void estdocxtable::create_display_frame(| `SS' debug) {
+	void estdocxtable::create_display_frame() {
 		string matrix table
 		string colvector frames
 		string scalar dispname, colwidh
@@ -458,7 +457,6 @@ class estdocxtable {
 		//dispname= st_tempname()
 		dispname= "estdocx"
 		frames= st_framedir()
-		frames
 		
 		for (i=1; i<=length(frames); i++) {
 			if(frames[i]==dispname) st_framedrop(dispname)
