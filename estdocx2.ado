@@ -67,14 +67,11 @@ program load_estimates_to_frame
 			}
 			
 		}
+
+		
 **# Bookmark #1
-		
-		// create frame to hold the regression table
-		tempname frname 
-		frame create `frname'
-		frame change `frname'
-		
-		mata: create_frame_table(`models')
+
+		mata: create_frame_table("`models'")
 
 
 		
@@ -100,9 +97,6 @@ program load_estimates_to_frame
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
-
-//capture program drop estdocx
-
 program estdocx
 	version 15.1
   
@@ -457,16 +451,24 @@ class estdocxtable {
 	/***************************************************************************
 	Function writes paramters for all models to dataframe
 	****************************************************************************/
-	void estdocxtable::create_display() {
+	void estdocxtable::create_display_frame(| `SS' debug) {
 		string matrix table
-		string scalar cframename, dispname, colwidh
+		string colvector frames
+		string scalar dispname, colwidh
 		real scalar i, ii, mpl, c
 		
-		//cframename= st_framecurrent()
-		//cframename
+
 		//dispname= st_tempname()
-		//if(st_frameexists(dispname)) _error("Can´t create display frame as frame with the anme already exists")
-		//st_framecreate(dispname)
+		dispname= "estdocx"
+		frames= st_framedir()
+		frames
+		
+		for (i=1; i<=length(frames); i++) {
+			if(frames[i]==dispname) st_framedrop(dispname)
+		}
+		
+		st_framecreate(dispname)
+		st_framecurrent(dispname)
 		
 		//find maximum number of characthers of in parameters
 		mpl=max(strlen(this.parameters))
