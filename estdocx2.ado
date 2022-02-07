@@ -112,9 +112,28 @@ program estdocx
 	local allowed "none N aic bic"
 	
 	// default values for options if none are provided
-	if ("`star'"=="") local star "none" // default is to report numerical p-value in pertenthesis
-	if ("`bfmt'"=="") local b "%04.2f"
-	if ("`saving'"=="") local saving "estimates_table.docx"
+	if ("`bfmt'"=="") {
+		local bfmt "%04.2f"
+	} 
+	else {
+		capture confirm numeric format `bfmt'
+		if(_rc!=0) {
+			di as error "The value provided in option bfmt(`bfmt') is not a valid Stata format"
+			exit _rc
+			}
+	}
+	
+
+	if ("`ci'"!="") {
+		capture confirm numeric format `ci'
+		if(_rc!=0) {
+			di as error "The value provided in option ci(`ci') is not a valid Stata format"
+			exit _rc
+			}
+	}
+	
+	
+	if ("`saving'"=="") local saving "estdocx.docx"
 	if ("`pagesize'"=="") local pagesize "A4"
 	
 	// if stats is provided check that all stats are allowed/implemented
