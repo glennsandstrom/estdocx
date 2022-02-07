@@ -350,16 +350,19 @@ class rowvarlist {
 	}
 /*#######################################################################################*/
 // CLASS estdocxtable
+//# Bookmark #1
 /*#######################################################################################*/
 class estdocxtable {
 	public:
 		//public vars
-		class AssociativeArray scalar rtables // array to save numerical stats with striong keys for all paramters in models
-		class rowvarlist scalar rowvarlist    // computes the uniq ordered list of pramaters that for row of table
-		string scalar parameters              // uniq ordered list of pramaters
-		string scalar varnames                // uniq ordered list of varnames
-		string scalar fname
-		real scalar   maxparamlength
+		class     AssociativeArray scalar rtables // array to save numerical stats with striong keys for all paramters in models
+		class     rowvarlist scalar rowvarlist    // computes the uniq ordered list of pramaters that for row of table
+		string    scalar parameters              // uniq ordered list of pramaters
+		string    scalar varnames                // uniq ordered list of varnames
+		string    scalar fname                   
+		string    scalar bfmt
+		string    scalar ci
+		`boolean' scalar eform
 		
 		//public functions
 		void        setup()                          // setup takes a namlist of stored estimates
@@ -379,7 +382,7 @@ class estdocxtable {
 //# Bookmark #2
 // CLASS estdocxtable FUNCTIONS
 /*#######################################################################################*/
-	void estdocxtable::setup(`SS' models, |string scalar debug) {
+	void estdocxtable::setup(`SS' models) {
 		struct model scalar mod // structure holding 
 		
 		real scalar i, ii, iii, maxparamlength
@@ -420,17 +423,7 @@ class estdocxtable {
 		this.rowvarlist.setup(allparams)
 		this.parameters = this.rowvarlist.unique
 		this.varnames = this.rowvarlist.uvarnames
-		
-		//this.rtables.keys()
-		//test= ("men1830", "b", "39.ageL1")
-		//this.rtables.exists(test)
-		//this.rtables.get(test)
-		
-		
-		
-		
-		
-		
+				
 	}
 	
 	/***************************************************************************
@@ -544,22 +537,27 @@ void create_frame_table(`SS' models,
 	//declare function objects, structures and variables						
 	class estdocxtable scalar table
 	
-	printf("{txt}Number of arguments are: {res}%f\n", args())
-	
-	
-	if(bfmt=="") bfmt= "%04.2f"
-
 	print_opts(models, keep, bfmt, ci, star, baselevels, Nop, eform)
 	
-	
+	// set up table objects
 	table.setup(models)
-	table.create_display_frame()
 	
+	// set options in table object
+	table.bfmt= bfmt // default is %04.2f set in main of ado
+	table.ci= ci
+	if(eform=="eform") table.eform= `TRUE'
+	else table.eform= `FALSE'
+	
+	
+	
+	
+	table.create_display_frame()
+	table.print()
 	
 	
 }
 
-
+/*###############################################################################################*/
 void print_opts(`SS' models,
               | `SS' keep,
 		        `SS' bfmt,
