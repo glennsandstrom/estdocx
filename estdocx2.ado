@@ -365,6 +365,7 @@ class estdocxtable {
 		void        setup()                          // setup takes a namlist of stored estimates
 		`RS'        get_stat()
 		void        create_display_frame()
+		void        print()
 		
 	private:
 		//private vars
@@ -513,7 +514,19 @@ class estdocxtable {
 		
 
 	}
-
+void estdocxtable::print() {
+	printf("{txt}--- Object estdocxtable: --------------------------------------\n")
+	"models" 
+	this.models
+	"varnames"
+	this.varnames
+	
+	printf("{txt}bfmt is:{result} %s\n", this.bfmt)
+	printf("{txt}ci is:{result} %s\n", this.ci)
+	printf("{txt}eform is:{result} %f\n", this.eform)
+	printf("{txt}___________________________________________________________\n")
+	
+}
 
 /*###############################################################################################
 // FUNCTIONS
