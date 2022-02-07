@@ -233,9 +233,9 @@ mata: mata set matastrict on
 mata: mata set matalnum on
 
 // macroed types
-local Boolean real
-local True    1
-local False   0
+local boolean real
+local TRUE    1
+local FALSE   0
 local SS      string scalar
 local SCV     string colvector
 local RS      real scalar
