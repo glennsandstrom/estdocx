@@ -569,9 +569,9 @@ void print_opts(`SS' models,
 		        `SS' Nop,
 		        `SS' eform
 		        ) {
-	printf("{txt}--- Models: --------------------------------------\n")
-	models
-	printf("{txt}--------------------------------------------------\n")
+	printf("{txt}--- INPUT: --------------------------------------\n")
+	
+	printf("{txt}keep is:{result} %s\n", models)
 	printf("{txt}keep is:{result} %s\n", keep)
 	printf("{txt}bfmt is:{result} %s\n", bfmt)
 	printf("{txt}ci is:{result} %s\n", ci)
