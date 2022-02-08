@@ -378,6 +378,8 @@ class estdocxtable {
 		//private functions
 		struct model get_rtable()         // function returing structure (rtable, params, stats) for model
 		void create_display()
+		`SS' get_beta()
+		
 }
 /*#######################################################################################*/
 //# Bookmark #2
@@ -386,9 +388,9 @@ class estdocxtable {
 	void estdocxtable::setup(`SS' models) {
 		struct model scalar mod // structure holding 
 		
-		real scalar i, ii, iii, maxparamlength
+		real scalar i, ii, iii
 		string colvector allparams
-		string vector test
+
 
 		
 		// convert string scalar to string vector of models
@@ -414,7 +416,6 @@ class estdocxtable {
 			for (ii=1; ii<=length(mod.stats); ii++) {
 				for (i=1; i<=length(mod.params); i++) {
 					this.rtables.put((this.models[iii], mod.stats[ii], mod.params[i]), mod.rtable[i,ii])
-					//printf("{txt}%s  {res}%f\n",mod.params[i], mod.rtable[i,1])
 				}
 			}
 			
@@ -448,25 +449,15 @@ class estdocxtable {
 			return(mod)
 
 	}
-	/***************************************************************************
-	F
-	****************************************************************************/
-	real scalar estdocxtable::get_stat(string scalar model, string scalar param, string scalar stat) {
-		real scalar value
-		
-			value= this.rtables.get((model, stat, param))
-			return(value)
 
-	}
-	
 	/***************************************************************************
 	Function writes paramters for all models to display frame
 	****************************************************************************/
 	void estdocxtable::create_display_frame(| string scalar fname) {
 		string matrix table
 		string colvector frames
-		string scalar dispname, colwidh
-		real scalar i, ii, mpl, c, beta
+		string scalar colwidh, beta
+		real scalar i, ii, mpl, c
 		
 
 		if(fname=="" ) this.fname= st_tempname()
@@ -483,11 +474,11 @@ class estdocxtable {
 		
 		//find maximum number of characthers of in parameters
 		mpl=max(strlen(this.parameters))
-		colwidh= "str" + strofreal(mpl) 
-		// set rows to the length of rowvarlist
+		colwidh= "str" + strofreal(mpl) // stringfomrat mpl number of characthers
+		// add column for paramters with a widh/characthers of the longest parameter
 		st_addvar(colwidh, "params")
 		
-		// add columns for variables
+		// add columns for for each model
 		for (i=1; i<=length(this.models); i++) {
 			st_addvar("str15", this.models[i])
 		}
@@ -502,31 +493,55 @@ class estdocxtable {
 			table[i,1]= this.parameters[i]
 			for (ii=1; ii<=length(this.models); ii++) {
 				c= ii+1
-				table[i,c]=strofreal(this.get_stat(this.models[ii], this.parameters[i], "b"))
+				
+				
+				//get beta
+				beta= this.get_beta(this.models[ii], this.parameters[i])
+				table[i,c]= beta
+				
+				//get p-value
+				
+				//get CI
+				
+				
+				
+				
 			}
 		}
 		
 		
 
 	}
-void estdocxtable::print() {
-	printf("{txt}--- Object estdocxtable: --------------------------------------\n")
-	"models" 
-	this.models
-	"varnames"
-	this.varnames
-	
-	printf("{txt}bfmt is:{result} %s\n", this.bfmt)
-	printf("{txt}ci is:{result} %s\n", this.ci)
-	printf("{txt}eform is:{result} %f\n", this.eform)
-	printf("{txt}fname is:{result} %s\n", this.fname)
-	printf("{txt}___________________________________________________________\n")
-	
-}
+	/***************************************************************************
+	Function returns formated beta-value string for model, param 
+	****************************************************************************/
+	`SS' estdocxtable::get_beta(`SS' model, `SS' param) {
+		
+		return(sprintf(this.bfmt, this.rtables.get((model, "b", param))))
+		
+	}
+	/***************************************************************************
+	Function displays table of object propreties
+	****************************************************************************/
+	void estdocxtable::print() {
+		printf("{txt}--- Object estdocxtable: --------------------------------------\n")
+		"models" 
+		this.models
+		"varnames"
+		this.varnames
+		
+		printf("{txt}bfmt is:{result} %s\n", this.bfmt)
+		printf("{txt}ci is:{result} %s\n", this.ci)
+		printf("{txt}eform is:{result} %f\n", this.eform)
+		printf("{txt}fname is:{result} %s\n", this.fname)
+		printf("{txt}___________________________________________________________\n")
+		
+	}
 
 /*###############################################################################################
 // FUNCTIONS
 ###############################################################################################*/
+//# Bookmark #2
 
 void create_frame_table(`SS' models,
                       | `SS' keep,
