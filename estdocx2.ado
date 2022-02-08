@@ -366,10 +366,9 @@ class estdocxtable {
 		`boolean' scalar eform
 		
 		//public functions
-		void        setup()                          // setup takes a namlist of stored estimates
-		`RS'        get_stat()
-		void        create_display_frame()
-		void        print()
+		void      setup()                          // setup takes a namlist of stored estimates
+		void      create_display_frame()
+		void      print()
 		
 	private:
 		//private vars
@@ -377,8 +376,9 @@ class estdocxtable {
 		
 		//private functions
 		struct model get_rtable()         // function returing structure (rtable, params, stats) for model
-		void create_display()
-		`SS' get_beta()
+		void   create_display()
+		`SS'   get_beta()
+		`SS'   get_pvalue()
 		
 }
 /*#######################################################################################*/
@@ -456,7 +456,7 @@ class estdocxtable {
 	void estdocxtable::create_display_frame(| string scalar fname) {
 		string matrix table
 		string colvector frames
-		string scalar colwidh, beta
+		string scalar colwidh, pvalue, ci, paramtext
 		real scalar i, ii, mpl, c
 		
 
@@ -496,16 +496,18 @@ class estdocxtable {
 				
 				
 				//get beta
-				beta= this.get_beta(this.models[ii], this.parameters[i])
-				table[i,c]= beta
-				
-				//get p-value
-				
-				//get CI
+				paramtext= this.get_beta(this.models[ii], this.parameters[i])
 				
 				
+				//add/get CI
 				
 				
+				//add/get p-value
+				pvalue= this.get_pvalue(this.models[ii], this.parameters[i])
+				paramtext= paramtext + pvalue
+				
+				// write full parameter text to cell in display frame
+				table[i,c]= paramtext
 			}
 		}
 		
@@ -516,8 +518,27 @@ class estdocxtable {
 	Function returns formated beta-value string for model, param 
 	****************************************************************************/
 	`SS' estdocxtable::get_beta(`SS' model, `SS' param) {
+		string scalar beta
+		real scalar B
 		
-		return(sprintf(this.bfmt, this.rtables.get((model, "b", param))))
+		beta= sprintf(this.bfmt, this.rtables.get((model, "b", param)))
+		
+		return(beta)
+		
+	}
+	/***************************************************************************
+	Function returns formated p-value string for model, param 
+	****************************************************************************/
+	`SS' estdocxtable::get_pvalue(`SS' model, `SS' param, | `SS' star) {
+		string scalar pvalue
+		real scalar p
+		
+		p= this.rtables.get((model, "pvalue", param))
+		
+		pvalue= substr(strofreal(p, "%5.3f"), 2, .)
+		// if there is a pvalue add that to the pramter in pertenthesis
+		if(pvalue!="")  pvalue= " (" + pvalue + ")"
+		return(pvalue)
 		
 	}
 	/***************************************************************************
