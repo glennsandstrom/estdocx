@@ -84,8 +84,8 @@ program estdocx
 		[pagesize(string)] ///
 		[landscape] ///
 		[Nop] ///
-		[eform]
-
+		[eform] ///
+		[fname(string)] 
 		
 		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is off
 		
@@ -158,7 +158,8 @@ program estdocx
 								 "`star'",       ///
 								 "`baselevels'", ///
 								 " `Nop'",       ///
-								 "`eform'"       ///
+								 "`eform'",       ///
+								 "`fname'"       ///
 								 )
 	
 /*
@@ -355,13 +356,13 @@ class rowvarlist {
 class estdocxtable {
 	public:
 		//public vars
-		class     AssociativeArray scalar rtables // array to save numerical stats with striong keys for all paramters in models
-		class     rowvarlist scalar rowvarlist    // computes the uniq ordered list of pramaters that for row of table
-		string    scalar parameters              // uniq ordered list of pramaters
-		string    scalar varnames                // uniq ordered list of varnames
-		string    scalar fname                   
-		string    scalar bfmt
-		string    scalar ci
+		class     AssociativeArray scalar rtables // array to save rtable-data using string keys: model, stat, parameter 
+		class     rowvarlist scalar rowvarlist    // computes the uniq ordered list of pramateters that form the rows of table
+		string    scalar parameters               // uniq ordered list of pramameters
+		string    scalar varnames                 // uniq ordered list of varnames
+		string    scalar fname                    // framename used to store the table
+		string    scalar bfmt                     // %fmt for beta
+		string    scalar ci                       // %fmt for confidence interval
 		`boolean' scalar eform
 		
 		//public functions
@@ -459,25 +460,26 @@ class estdocxtable {
 	}
 	
 	/***************************************************************************
-	Function writes paramters for all models to dataframe
+	Function writes paramters for all models to display frame
 	****************************************************************************/
-	void estdocxtable::create_display_frame() {
+	void estdocxtable::create_display_frame(| string scalar fname) {
 		string matrix table
 		string colvector frames
 		string scalar dispname, colwidh
-		real scalar i, ii, mpl, c
+		real scalar i, ii, mpl, c, beta
 		
 
-		//dispname= st_tempname()
-		dispname= "estdocx"
+		if(fname=="" ) this.fname= st_tempname()
+		else this.fname= fname
+	
 		frames= st_framedir()
 		
 		for (i=1; i<=length(frames); i++) {
-			if(frames[i]==dispname) st_framedrop(dispname)
+			if(frames[i]==this.fname) st_framedrop(this.fname)
 		}
 		
-		st_framecreate(dispname)
-		st_framecurrent(dispname)
+		st_framecreate(this.fname)
+		st_framecurrent(this.fname)
 		
 		//find maximum number of characthers of in parameters
 		mpl=max(strlen(this.parameters))
@@ -517,6 +519,7 @@ void estdocxtable::print() {
 	printf("{txt}bfmt is:{result} %s\n", this.bfmt)
 	printf("{txt}ci is:{result} %s\n", this.ci)
 	printf("{txt}eform is:{result} %f\n", this.eform)
+	printf("{txt}fname is:{result} %s\n", this.fname)
 	printf("{txt}___________________________________________________________\n")
 	
 }
@@ -532,12 +535,13 @@ void create_frame_table(`SS' models,
 		                `SS' star,
 		                `SS' baselevels,
 		                `SS' Nop,
-		                `SS' eform
+		                `SS' eform,
+						`SS' fname
 		                ) {
 	//declare function objects, structures and variables						
 	class estdocxtable scalar table
 	
-	print_opts(models, keep, bfmt, ci, star, baselevels, Nop, eform)
+	print_opts(models, keep, bfmt, ci, star, baselevels, Nop, eform, fname)
 	
 	// set up table objects
 	table.setup(models)
@@ -551,7 +555,8 @@ void create_frame_table(`SS' models,
 	
 	
 	
-	table.create_display_frame()
+	
+	table.create_display_frame(fname)
 	table.print()
 	
 	
@@ -565,7 +570,8 @@ void print_opts(`SS' models,
 		        `SS' star,
 		        `SS' baselevels,
 		        `SS' Nop,
-		        `SS' eform
+		        `SS' eform,
+				`SS' fname
 		        ) {
 	printf("{txt}--- INPUT: --------------------------------------\n")
 	
@@ -576,6 +582,7 @@ void print_opts(`SS' models,
 	printf("{txt}star is:{result} %s\n", star)
 	printf("{txt}Nop is:{result} %s\n", Nop)
 	printf("{txt}eform is:{result} %s\n", eform)
+	printf("{txt}fname is:{result} %s\n", fname)
 	printf("{txt}__________________________________________________\n")
 }
 
