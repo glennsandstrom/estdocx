@@ -92,12 +92,12 @@ program estdocx
 
 
 	// set local holding the names of estimates to be reported in table
-	local models= "`namelist'" //space separated list of estimates
-	//loop over models to and check that they are valid estimation result names avalaible in memory
+	local estnames= "`namelist'" //space separated list of estimates
+	//loop over estnames to and check that they are valid estimation result names avalaible in memory
 
 	qui estimates dir
 	local estimates= r(names)
-	foreach model in `models' {
+	foreach model in `estnames' {
 		if(!strmatch("`estimates'", "*`model'*")) {
 		di _newline(3)  
 		di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
@@ -151,7 +151,7 @@ program estdocx
 		
 **# Bookmark #1
 
-		mata: create_frame_table("`models'",     /// 
+		mata: create_frame_table("`estnames'",     /// 
 		                         "`keep'",       ///
 								 "`bfmt'",       ///
 								 "`ci'",         /// 
@@ -468,97 +468,53 @@ class rowvarlist {
 	public:
 		//public vars
 		string colvector unique
-		string colvector uvarnames
 		string colvector constants
 		
 		//public functions
 		void setup() // setup takes a namlist of stored estimates
 		void print()
 		
-	
-	private:
-		//private vars
-		
-		
-		//private functions
-		string colvector get_uniqvarnames()
 }
 	/*#######################################################################################
 	// CLASS rowvarlist FUNCTIONS
 	#######################################################################################*/
 	/***************************************************************************
-	Function takes a vector of all paramters in all models and returns the unique
+	Function takes a vector of model structures models and returns the unique
 	list of pramameters with all duplicates removed => function as the rows
 	of the regression table
 	****************************************************************************/
-	void rowvarlist::setup(string colvector allparams) {
+	void rowvarlist::setup(struct model colvector models) {
 
 	real scalar i, ii, found
 	string scalar param, varname, prefix, find
-		
+
 		//declare colvector allvars
 		this.constants= J(0, 1, "")
 		
-		// get the unique set of varnames in models with prefix stripped
-		this.uvarnames= get_uniqvarnames(allparams)
-		
-		for (i=1; i<=length(this.uvarnames); i++) {
-			// check if varname is a constant or free and at it to constants if not already there
-			if(regexm(this.uvarnames[i], "^[_/]") & !anyof(this.constants, this.uvarnames[i])) this.constants=this.constants\this.uvarnames[i]
-					
-			find= "[0-9]*[obc]*\." + this.uvarnames[i] 
-			//loop over complete list of parameters
-			for (ii=1; ii<=length(allparams); ii++) {
-				// check if the varname match find and it it to unique if not already there
-				if(regexm(allparams[ii], find) & !anyof(this.unique, allparams[ii])) {
-					//printf("{txt}pattern: {res}%s {txt}mathed to: {res}%s\n", find, allparams[ii])
-					this.unique= this.unique\allparams[ii]
+	
+		for (i=1; i<=length(models); i++) {
+			models[i].params
+			for (ii=1; ii<=length(models[i].params); ii++) {
+				// if it is constant or free and adding it to this.constants
+				if(regexm(models[i].params[ii], "^[_/]")) {
+					if(!anyof(this.constants, models[i].params[ii])) this.constants=this.constants\models[i].params[ii]
 				}
+				else { // if it is not free/const add it to unique if it is not already a member of unique
+					if(!anyof(this.unique, models[i].params[ii])) this.unique= this.unique\models[i].params[ii]
+				}
+				
 			}
+		
 			
 		}
 
 		
 		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
 		this.unique= this.unique\this.constants
+
 		
 	}
-	/***************************************************************************
-	Function takes of all paramters in all models and returns the unique varnames
-	found in the list of complete stack of paramters
-	****************************************************************************/
-	string colvector rowvarlist::get_uniqvarnames(allparams) {
-
-	string colvector allvarnames, uvarnames
-	string scalar param, vars, var
-	real scalar i, ii
-
-		allvarnames= J(0, 1, "")
-		
-			// remove numbers and letters before up until and including .
-			for (i=1; i<=length(allparams); i++) {
-				param= allparams[i,1]
-				// for each mach of prefix remove it until non are left
-				while(regexm(param, "[0-9]*[obc]*\.")) param= regexr(param, "[0-9]*[obc]*\.", "")
-				//split by # into vector of varnames in the parameter
-				vars= tokens(param, "#")
-				for (ii=1; ii<=length(vars); ii++) {
-					// add the var to varnames with the prefix removed
-					if(vars[ii]!="#") allvarnames= allvarnames\vars[ii]
-				}
-			}
-			
-			// remove all duplicate varnames
-			uvarnames= J(0, 1, "")
-			for (i=1; i<=length(allvarnames); i++) {
-				var= allvarnames[i,1]
-				// check if cof is already in uvarnames and add it if it is not
-				if(!anyof(uvarnames, var)) uvarnames= uvarnames\var
-			}
-			
-			return(uvarnames)
-					
-	}
+	
 /*#######################################################################################*/
 // CLASS estdocxtable
 /*#######################################################################################*/
@@ -581,7 +537,7 @@ class estdocxtable {
 		
 	private:
 		//private vars
-		string vector models              // vector of the name of estimates
+		string vector estnames              // vector of the name of estimates
 		
 		//private functions
 		struct model get_rtable()         // function returing structure (rtable, params, stats) for model
@@ -593,49 +549,48 @@ class estdocxtable {
 /*#######################################################################################
 // CLASS estdocxtable FUNCTIONS
 #######################################################################################*/
-	void estdocxtable::setup(`SS' models) {
+	void estdocxtable::setup(`SS' estnames) {
 		struct model scalar mod // structure holding 
-		
+		struct model colvector models
 		real scalar i, ii, iii
 		string colvector allparams
 
 
 		
-		// convert string scalar to string vector of models
-		this.models= tokens(models)
+		// convert string scalar to string vector of estnames
+		this.estnames= tokens(estnames)
 			
 		// reinitate the assositative array as array with 3 dimention string keys
 		this.rtables.reinit("string", 3) 
 		this.rtables.notfound(.)
 		
-		//declare colvector allparams
-		allparams= J(0, 1, "")
+		//declare structure colvector models
+		models= J(0, 1, "")
 
 		// fill AssociativeArray T with data from struct mod
-		for (iii=1; iii<=length(this.models); iii++) {
-			
+		for (iii=1; iii<=length(this.estnames); iii++) {
+						
 			// create and return struct holding mat rtable and string vectors params stats
-			mod= get_rtable(this.models[iii])
+			mod= get_rtable(this.estnames[iii])
+			// add mod to vector models
+			if(!length(models)) models= mod
+			else models= models\mod
 			
-			// stack colvector allparams with the params of model
-			if(!length(allparams)) allparams= mod.params
-			else allparams= allparams\mod.params
-					
 			for (ii=1; ii<=length(mod.stats); ii++) {
 				for (i=1; i<=length(mod.params); i++) {
-					this.rtables.put((this.models[iii], mod.stats[ii], mod.params[i]), mod.rtable[i,ii])
+					this.rtables.put((this.estnames[iii], mod.stats[ii], mod.params[i]), mod.rtable[i,ii])
 				}
 			}
 			
 		}
+	
 		
 
-		this.rowvarlist.setup(allparams)
+		this.rowvarlist.setup(models)
 		this.parameters = this.rowvarlist.unique
-		this.varnames = this.rowvarlist.uvarnames
+		//this.varnames = this.rowvarlist.uvarnames
 				
 	}
-	
 	/***************************************************************************
 	Function takes a estimtate name and returns a model structure with rtable, params and stats
 	****************************************************************************/
@@ -687,8 +642,8 @@ class estdocxtable {
 		st_addvar(colwidh, "params")
 		
 		// add columns for for each model
-		for (i=1; i<=length(this.models); i++) {
-			st_addvar("str15", this.models[i])
+		for (i=1; i<=length(this.estnames); i++) {
+			st_addvar("str15", this.estnames[i])
 		}
 		
 		// add rows euqal
@@ -698,20 +653,24 @@ class estdocxtable {
 		st_sview(table, ., .)  // load dataset from stata
 		
 		for (i=1; i<=length(this.parameters); i++) {
+			// write full parameter text to row header
 			table[i,1]= this.parameters[i]
-			for (ii=1; ii<=length(this.models); ii++) {
+			
+			// check if parameter is base or omitted
+			
+			for (ii=1; ii<=length(this.estnames); ii++) {
 				c= ii+1
 				
 				
 				//get beta
-				paramtext= this.get_beta(this.models[ii], this.parameters[i])
+				paramtext= this.get_beta(this.estnames[ii], this.parameters[i])
 				
 				
 				//add/get CI
 				
 				
 				//add/get p-value
-				pvalue= this.get_pvalue(this.models[ii], this.parameters[i])
+				pvalue= this.get_pvalue(this.estnames[ii], this.parameters[i])
 				paramtext= paramtext + pvalue
 				
 				// write full parameter text to cell in display frame
@@ -754,10 +713,13 @@ class estdocxtable {
 	****************************************************************************/
 	void estdocxtable::print() {
 		printf("{txt}--- Object estdocxtable: --------------------------------------\n")
-		"models" 
-		this.models
+		"estnames" 
+		this.estnames
 		"varnames"
 		this.varnames
+		
+		"paramters"
+		this.parameters
 		
 		printf("{txt}bfmt is:{result} %s\n", this.bfmt)
 		printf("{txt}ci is:{result} %s\n", this.ci)
@@ -772,7 +734,7 @@ class estdocxtable {
 ###############################################################################################*/
 //# Bookmark #2
 
-void create_frame_table(`SS' models,
+void create_frame_table(`SS' estnames,
                       | `SS' keep,
 		                `SS' bfmt,
 		                `SS' ci,
@@ -785,16 +747,18 @@ void create_frame_table(`SS' models,
 	//declare function objects, structures and variables						
 	class estdocxtable scalar table
 	
-	print_opts(models, keep, bfmt, ci, star, baselevels, Nop, eform, fname)
+	print_opts(estnames, keep, bfmt, ci, star, baselevels, Nop, eform, fname)
 	
 	// set up table objects
-	table.setup(models)
+	table.setup(estnames)
 	
 	// set options in table object
 	table.bfmt= bfmt // default is %04.2f set in main of ado
-	table.ci= ci
+	
 	if(eform=="eform") table.eform= `TRUE'
 	else table.eform= `FALSE'
+	
+	table.ci= ci
 	
 	
 	
@@ -807,7 +771,7 @@ void create_frame_table(`SS' models,
 }
 
 /*###############################################################################################*/
-void print_opts(`SS' models,
+void print_opts(`SS' estnames,
               | `SS' keep,
 		        `SS' bfmt,
 		        `SS' ci,
@@ -819,7 +783,7 @@ void print_opts(`SS' models,
 		        ) {
 	printf("{txt}--- INPUT: --------------------------------------\n")
 	
-	printf("{txt}keep is:{result} %s\n", models)
+	printf("{txt}estnames is:{result} %s\n", estnames)
 	printf("{txt}keep is:{result} %s\n", keep)
 	printf("{txt}bfmt is:{result} %s\n", bfmt)
 	printf("{txt}ci is:{result} %s\n", ci)
