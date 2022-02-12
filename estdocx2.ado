@@ -153,10 +153,10 @@ program estdocx
 
 		mata: create_frame_table("`estnames'",     /// 
 		                         "`keep'",       ///
+								 "`baselevels'", ///
 								 "`bfmt'",       ///
 								 "`ci'",         /// 
 								 "`star'",       ///
-								 "`baselevels'", ///
 								 " `Nop'",       ///
 								 "`eform'",       ///
 								 "`fname'"       ///
@@ -493,7 +493,6 @@ class rowvarlist {
 		
 	
 		for (i=1; i<=length(models); i++) {
-			models[i].params
 			for (ii=1; ii<=length(models[i].params); ii++) {
 				// if it is constant or free and adding it to this.constants
 				if(regexm(models[i].params[ii], "^[_/]")) {
@@ -507,7 +506,6 @@ class rowvarlist {
 		
 			
 		}
-
 		
 		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
 		this.unique= this.unique\this.constants
@@ -523,12 +521,13 @@ class estdocxtable {
 		//public vars
 		class     AssociativeArray scalar rtables // array to save rtable-data using string keys: model, stat, parameter 
 		class     rowvarlist scalar rowvarlist    // computes the uniq ordered list of pramateters that form the rows of table
-		string    scalar parameters               // uniq ordered list of pramameters
+		string    colvector parameters            // uniq ordered list of pramameters
 		string    scalar varnames                 // uniq ordered list of varnames
 		string    scalar fname                    // framename used to store the table
 		string    scalar bfmt                     // %fmt for beta
 		string    scalar ci                       // %fmt for confidence interval
 		`boolean' scalar eform
+		`boolean' scalar baselevels
 		
 		//public functions
 		void      setup()                          // setup takes a namlist of stored estimates
@@ -541,6 +540,7 @@ class estdocxtable {
 		
 		//private functions
 		struct model get_rtable()         // function returing structure (rtable, params, stats) for model
+		void   remove_baselevels()
 		void   create_display()
 		`SS'   get_beta()
 		`SS'   get_pvalue()
@@ -588,7 +588,7 @@ class estdocxtable {
 
 		this.rowvarlist.setup(models)
 		this.parameters = this.rowvarlist.unique
-		//this.varnames = this.rowvarlist.uvarnames
+				
 				
 	}
 	/***************************************************************************
@@ -635,16 +635,21 @@ class estdocxtable {
 		st_framecreate(this.fname)
 		st_framecurrent(this.fname)
 		
+		//remove base and omitted from interaction paramteters if baselevels is FALSE
+		if(!this.baselevels) remove_baselevels()
+
+		
 		//find maximum number of characthers of in parameters
 		mpl=max(strlen(this.parameters))
 		colwidh= "str" + strofreal(mpl) // stringfomrat mpl number of characthers
 		// add column for paramters with a widh/characthers of the longest parameter
-		st_addvar(colwidh, "params")
+		varindex= st_addvar(colwidh, "params")
 		
 		// add columns for for each model
 		for (i=1; i<=length(this.estnames); i++) {
-			st_addvar("str15", this.estnames[i])
+			varindex= st_addvar("str15", this.estnames[i])
 		}
+				
 		
 		// add rows euqal
 		st_addobs(length(this.parameters))
@@ -682,11 +687,57 @@ class estdocxtable {
 
 	}
 	/***************************************************************************
+	Function returns 
+	****************************************************************************/
+	void estdocxtable::remove_baselevels() {
+		real scalar i, ii, interaction, bases
+		string scalar prefix
+		string colvector reduced, intervars
+		
+		//declare colvector reduced
+		reduced= J(0, 1, "")
+		
+		for (i=1; i<=length(this.parameters); i++) {
+			
+			//check if parameter is an interaction
+			interaction= strrpos(this.parameters[i],"#")  > 0
+			
+			if (interaction) {
+				//check if all incuded factors in interaction are base or omitted
+				intervars=tokens(subinstr(this.parameters[i], "#", " ") ) //matrix with varnames forming the interaction
+				bases= 0
+				for (ii=1; ii<=length(intervars); ii++) {
+					// assign part of string before . to P.prefix
+					prefix= substr(intervars[ii] , 1 , strrpos(intervars[ii],".")-1 )
+					
+					if(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o")  > 0) bases++
+				}
+				
+				if(length(intervars)!=bases) {
+					if(!length(reduced)) reduced= this.parameters[i]
+					else reduced= reduced\this.parameters[i]
+				}
+
+			}
+			else {
+				if(!length(reduced)) reduced= this.parameters[i]
+				else reduced= reduced\this.parameters[i]
+				
+			}	
+		
+		}	
+			
+		this.parameters= reduced
+				
+	}
+	/***************************************************************************
 	Function returns formated beta-value string for model, param 
 	****************************************************************************/
 	`SS' estdocxtable::get_beta(`SS' model, `SS' param) {
+		
 		string scalar beta
 		real scalar B
+		
 		
 		beta= sprintf(this.bfmt, this.rtables.get((model, "b", param)))
 		
@@ -720,7 +771,7 @@ class estdocxtable {
 		
 		"paramters"
 		this.parameters
-		
+		printf("{txt}baselevels is:{result} %f\n", this.baselevels)
 		printf("{txt}bfmt is:{result} %s\n", this.bfmt)
 		printf("{txt}ci is:{result} %s\n", this.ci)
 		printf("{txt}eform is:{result} %f\n", this.eform)
@@ -736,10 +787,10 @@ class estdocxtable {
 
 void create_frame_table(`SS' estnames,
                       | `SS' keep,
+					    `SS' baselevels,
 		                `SS' bfmt,
 		                `SS' ci,
 		                `SS' star,
-		                `SS' baselevels,
 		                `SS' Nop,
 		                `SS' eform,
 						`SS' fname
@@ -753,6 +804,10 @@ void create_frame_table(`SS' estnames,
 	table.setup(estnames)
 	
 	// set options in table object
+	if(baselevels=="baselevels") table.baselevels= `TRUE'
+	else table.baselevels= `FALSE'
+	
+
 	table.bfmt= bfmt // default is %04.2f set in main of ado
 	
 	if(eform=="eform") table.eform= `TRUE'
@@ -788,6 +843,7 @@ void print_opts(`SS' estnames,
 	printf("{txt}bfmt is:{result} %s\n", bfmt)
 	printf("{txt}ci is:{result} %s\n", ci)
 	printf("{txt}star is:{result} %s\n", star)
+	printf("{txt}baselevels is:{result} %s\n", baselevels)
 	printf("{txt}Nop is:{result} %s\n", Nop)
 	printf("{txt}eform is:{result} %s\n", eform)
 	printf("{txt}fname is:{result} %s\n", fname)
