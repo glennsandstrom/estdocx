@@ -528,11 +528,13 @@ class estdocxtable {
 		string    scalar ci                       // %fmt for confidence interval
 		`boolean' scalar eform
 		`boolean' scalar baselevels
+		real      colvector star                  // numeric vector of sig < P cuttofs for * significnase markers
 		
 		//public functions
 		void      setup()                          // setup takes a namlist of stored estimates
 		void      create_display_frame()
 		void      print()
+		void      set_star()
 		
 	private:
 		//private vars
@@ -661,8 +663,8 @@ class estdocxtable {
 			// write full parameter text to row header
 			table[i,1]= this.parameters[i]
 			
-			// check if parameter is base or omitted
 			
+			// get stats for each model and form the celltext
 			for (ii=1; ii<=length(this.estnames); ii++) {
 				c= ii+1
 				
@@ -747,18 +749,36 @@ class estdocxtable {
 	/***************************************************************************
 	Function returns formated p-value string for model, param 
 	****************************************************************************/
-	`SS' estdocxtable::get_pvalue(`SS' model, `SS' param, | `SS' star) {
+	`SS' estdocxtable::get_pvalue(`SS' model, `SS' param) {
 		string scalar pvalue
-		real scalar p
+		real scalar p, i
 		
 		p= this.rtables.get((model, "pvalue", param))
 		
-		pvalue= substr(strofreal(p, "%5.3f"), 2, .)
-		// if there is a pvalue add that to the pramter in pertenthesis
-		if(pvalue!="")  pvalue= " (" + pvalue + ")"
+		if(length(this.star)) {
+			//add stars according to cutoffs
+			for(i=1; i<=cols(this.star); i++) {
+				if  (p < this.star[i]) pvalue= pvalue + "*"
+				}
+		}
+		else {
+			// star is FALSE return numeric pvalue
+			pvalue= substr(strofreal(p, "%5.3f"), 2, .)
+			// if there is a pvalue add that to the pramter in pertenthesis
+			if(pvalue!="")  pvalue= " (" + pvalue + ")"
+		}
+		
+		
+
 		return(pvalue)
 		
 	}
+	/***************************************************************************
+	Function set the star-option 
+	****************************************************************************/
+	void estdocxtable::set_star(`SS' star) {
+		this.star= strtoreal(tokens(star))
+   	}
 	/***************************************************************************
 	Function displays table of object propreties
 	****************************************************************************/
@@ -802,6 +822,9 @@ void create_frame_table(`SS' estnames,
 	
 	// set up table objects
 	table.setup(estnames)
+	
+	// set options in table object
+	if(star!="") table.set_star(star)
 	
 	// set options in table object
 	if(baselevels=="baselevels") table.baselevels= `TRUE'
