@@ -546,6 +546,7 @@ class estdocxtable {
 		void   create_display()
 		`SS'   get_beta()
 		`SS'   get_pvalue()
+		`SS'   get_ci()
 		
 }
 /*#######################################################################################
@@ -669,11 +670,12 @@ class estdocxtable {
 				c= ii+1
 				
 				
-				//get beta
+				//always get beta
 				paramtext= this.get_beta(this.estnames[ii], this.parameters[i])
 				
 				
-				//add/get CI
+				// if ci is TRUE add/get CI, that it is valied fmt is confirmed in main ado
+				if(this.ci!="") paramtext= paramtext + this.get_ci(this.estnames[ii], this.parameters[i])
 				
 				
 				//add/get p-value
@@ -774,6 +776,24 @@ class estdocxtable {
 		
 	}
 	/***************************************************************************
+	Function returns formated CI string for model, param 
+	****************************************************************************/
+	`SS' estdocxtable::get_ci(`SS' model, `SS' param) {
+		string scalar ci, lowb, highb
+		real scalar ll, ul
+		
+		ll= this.rtables.get((model, "ll", param))
+		ul= this.rtables.get((model, "ul", param))
+		
+		// 95% CIs
+		lowb= strofreal(ll, this.ci)
+		highb= strofreal(ul, this.ci)
+		if(lowb!=".") ci= " (" + lowb + "-" + highb + ")"
+				
+		return(ci)
+		
+	}
+	/***************************************************************************
 	Function set the star-option 
 	****************************************************************************/
 	void estdocxtable::set_star(`SS' star) {
@@ -833,10 +853,12 @@ void create_frame_table(`SS' estnames,
 
 	table.bfmt= bfmt // default is %04.2f set in main of ado
 	
+	if(ci!="") table.ci= ci
+	
 	if(eform=="eform") table.eform= `TRUE'
 	else table.eform= `FALSE'
 	
-	table.ci= ci
+	
 	
 	
 	
