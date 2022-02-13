@@ -48,8 +48,6 @@
 /**SUB-ROUTINES  **/
 /**************************************************************************/
 	/*########################################################################*/
-	//capture program drop create_docx
-		
 	program create_docx
 		version 15.1
 		syntax [namelist(name=models)], pagesize(string) [landscape]
@@ -63,7 +61,7 @@
 			else putdocx begin, pagesize(`pagesize')
 			
 	end
-	
+	/*########################################################################*/
 	program create_table
 		version 15.1
 		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
@@ -114,7 +112,6 @@
 			}
 	end
 	/*########################################################################*/
-	//capture program drop get_models
 	program get_models, rclass
 	version 15.1
 	  
@@ -170,7 +167,6 @@
 		
 	end
 	/*########################################################################*/
-	//capture program drop write_continious
 	program write_continious
 		version 15.1
 		syntax namelist(min=1), ///
@@ -231,7 +227,6 @@
 			
 	end
 	/*########################################################################*/	
-	//capture program drop write_level
 	program write_level
 		version 15.1
 		syntax namelist(min=1), ///
@@ -292,7 +287,6 @@
 		}	
 	end
 	/*########################################################################*/	
-	//capture program drop write_legend
 	program write_legend
 		version 15.1
 		syntax, star(string) row(integer) col(integer)
@@ -439,14 +433,9 @@
 			}
 		}
 	end
-	/*########################################################################*/
-	
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
-
-//capture program drop estdocx
-
 program estdocx
 	version 15.1
   
@@ -815,7 +804,6 @@ class parameter {
 			printf("{txt}interaction is:{result} %f\n", this.interaction)
 			printf("{txt}___________________________________________________________\n")
 	}
-	
 /**************************************************************************/
 // CLASS rowvarlist
 /**************************************************************************/
