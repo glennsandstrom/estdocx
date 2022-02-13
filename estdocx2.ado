@@ -615,15 +615,14 @@ class estdocxtable {
 			return(mod)
 
 	}
-
 	/***************************************************************************
-	Function writes paramters for all models to display frame
+	Function writes paramters for all estnames to display frame
 	****************************************************************************/
 	void estdocxtable::create_display_frame(| string scalar fname) {
 		string matrix table
 		string colvector frames
 		string scalar colwidh, pvalue, ci, paramtext
-		real scalar i, ii, mpl, c
+		real scalar i, ii, mpl, c, varindex
 		
 
 		if(fname=="" ) this.fname= st_tempname()
@@ -650,7 +649,7 @@ class estdocxtable {
 		
 		// add columns for for each model
 		for (i=1; i<=length(this.estnames); i++) {
-			varindex= st_addvar("str15", this.estnames[i])
+			varindex= st_addvar("str20", this.estnames[i])
 		}
 				
 		
