@@ -423,7 +423,7 @@ class parameter {
 			
 			}
 			else {
-				_error(3300, "Parameter contains an non implemented value(s)")
+				_error(3300, "Parameter contains a value not implemented in estdocx")
 			}
 			
 			// check that a varlabel is set else return varname in P.label

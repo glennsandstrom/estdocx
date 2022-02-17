@@ -18,27 +18,42 @@ mata:
 class model {
 	public:
 		//public vars
-		string scalar    estname
-		real   matrix    rtable
-		string colvector parameters
-		string colvector statistics
-		string colvector varnames
-		real   colvector base
-		real   colvector omitted
+		string scalar    estname       // name of a stored estimate in memory
+		real   matrix    modscalars    // matrix with all data for model
+		string colvector statistics    // list of statistics returned by matrixcolstripe(r(table))
+		string colvector parameters    // full list of parameters from matrixrowstripe(r(table))
+		string colvector levels     // colvector with base and omitted removed used to match params across models
+		real   colvector interactions  // vector of boolean values indicating if parameter[row] is interaction
+		real   colvector base          // vector of boolean values indicating if parameter[row] is base
+		real   colvector omitted       // vector of boolean values indicating if parameter[row] is omitted
+		real   colvector constfree     // vector of boolean values indicating if parameter[row] is _const or free
 		
 		//public functions
-		void setup() // setup takes a namlist of stored estimates
-		void print()
+		void setup()         // setup takes a name of a stored estimate in memory
+		void print()         // prints object properties to screen
+		`SS' get_beta()      // returns beta as string for a given factor
+		`SS' get_pvalue()    // returns pvalue as string for a given factor
+		`SS' get_ci()        // returns ci as string for a given factor
+		
+	private:
+	    // private vars
+		class AssociativeArray scalar rtable // array to save rtable-data using string keys: parameter, statistic
+	
+		
+	    // private functions
+		void set_levels()
+		void set_interactions()
+		void set_base()
+		void set_omitted()
+		void set_constfree()
 		
 }
 	/*#######################################################################################
 	// CLASS model FUNCTIONS
 	#######################################################################################*/
-
 	void model::setup(string scalar estname) {
 		string scalar com
-		
-		
+				
 		//get matrix rtable created by running estimates replay estname
 		com= "estimates replay " + estname
 		stata(com, 1)
@@ -46,31 +61,137 @@ class model {
 		//stata("mat li M")
 		stata("mat M= M'")
 		
-		rtable= st_matrix("M")
+		modscalars= st_matrix("M")
 		parameters= st_matrixrowstripe("M") //get varlist of model
 		statistics= st_matrixcolstripe("M") //get stats of model
 		statistics= statistics[.,2] 		//remove first col that is all missing
 		parameters= parameters[.,2] 		//remove first col that is all missing
 		
+		interactions= J(length(parameters), 1, .)
 		
-		
-		
+		set_levels()
+		set_interactions()
+		set_base()
 		
 		
 	}
 	/***************************************************************************
-	Function prints object propeties to screen
+	Function prints object properties to screen
+	****************************************************************************/
+	void model::set_levels() {
+		real scalar r
+		string scalar param
+		
+		this.levels= J(length(this.parameters), 1, "")
+		
+		for (r=1; r<=length(this.parameters); r++) {
+			param= this.parameters[r]
+			// remove base and omitted charathers
+			while(regexm(param, "[bo]+\.")) param= regexr(param, "[bo]+\.", ".")
+			// remove contionious chanter in intercations
+			while(regexm(param, "[c]+\.")) param= regexr(param, "[c]+\.", "")
+			
+			this.levels[r]=param
+		}
+			
+		
+	}
+	/***************************************************************************
+	Function prints object properties to screen
+	****************************************************************************/
+	void model::set_interactions() {
+		`RS' r
+		
+		this.interactions= J(length(this.parameters), 1, .)
+		
+		for (r=1; r<=length(this.parameters); r++) {
+			this.interactions[r]= (strrpos(this.parameters[r],"#") > 0)
+		}
+	}
+	/***************************************************************************
+	Function sets boolean vector 
+	****************************************************************************/
+	void model::set_base() {
+		`RS' r, i, baseom
+		`SS' prefix
+		`SCV' intervars
+		
+		this.base= J(length(this.parameters), 1, .)
+			
+		for (r=1; r<=length(this.parameters); r++) {
+		
+			
+			if (this.interactions[r]) {
+				//check if all incuded factors in interaction are base or omitted
+				
+				intervars=tokens(subinstr(this.parameters[r], "#", " ") ) //matrix with varnames forming the interaction
+				
+				baseom= 0
+				
+				for (i=1; i<=length(intervars); i++) {
+					// assign part of string before . to P.prefix
+					prefix= substr(intervars[i] , 1 , strrpos(intervars[i],".")-1 )
+					// increment bases if it is a base or omitted factor
+					if(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o")  > 0) baseom++
+				}
+				
+				// check if all factors are base or omitted
+				if(length(intervars)==baseom) this.base[r]= `TRUE'
+				else this.base[r]= `FALSE'
+			
+			}
+			else {
+				
+				// if it is not an interaction
+			
+				prefix= substr(this.parameters[r] , 1 , strrpos(this.parameters[r],".")-1)
+		
+				if(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o") > 0) this.base[r]= `TRUE'
+				else this.base[r]= `FALSE'
+
+			}	
+		
+	
+		
+
+		}
+			
+		
+	}
+	/***************************************************************************
+	Function prints object properties to screen
 	****************************************************************************/
 	void model::print() {
+		`SS' tabrowtxt, colwith
+		`RS' i
+		
+		colwith=strofreal(max(strlen(this.parameters))+10)
+		colwith
+		
+		//this.parameters, this.levels, strofreal(this.interactions), strofreal(this.base)) 
+		
 		printf("{txt}--- Object model: --------------------------------------\n")
+		                        //5                      17
+		printf("{txt}{space 1}Row{space 1}{c |}{space 2}parameters{col 40}{c |} # {c |} B {c |}{space 2}levels{col 83}{c |}\n")
+        printf("{hline 5}{c +}{hline 33}{c +}{hline 32}{c +}{hline 3}{c +}{hline 3}{c +}\n")
+		for (i=1; i<=length(this.parameters); i++) {
+			
+			            tabrowtxt= "{result}%4.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result} %s{col 40}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}%3.0f{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%1.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}%s{col 73}{txt}{c |}\n"
+			
+			printf(tabrowtxt, i, this.parameters[i], this.interactions[i], this.base[i], this.levels[i])
+		}
+		printf("{txt}{hline 5}{c BT}{hline 33}{c BT}{hline 32}{c BT}{hline 3}{c BT}{hline 3}{c BT}\n")
+		
+		
+		
 		printf("{txt}estname is:{result} %s\n", this.estname)
 		printf("{txt}___________________________________________________________\n")
-		"parameters"
-		this.parameters
-		"varnames"
-		this.varnames
-		"statistics"
-		this.statistics
+		"parameters, levels, interactions, base, omitted, constfree"
+
 		printf("{txt}___________________________________________________________\n")
 		
 	}
