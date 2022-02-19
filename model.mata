@@ -22,7 +22,7 @@ class model {
 		real   matrix    modscalars    // matrix with all data for model
 		string colvector statistics    // list of statistics returned by matrixcolstripe(r(table))
 		string colvector parameters    // full list of parameters from matrixrowstripe(r(table))
-		string colvector levels     // colvector with base and omitted removed used to match params across models
+		string colvector levels        // colvector with base and omitted removed used to match params across models
 		real   colvector interactions  // vector of boolean values indicating if parameter[row] is interaction
 		real   colvector base          // vector of boolean values indicating if parameter[row] is base
 		real   colvector omitted       // vector of boolean values indicating if parameter[row] is omitted
@@ -31,9 +31,9 @@ class model {
 		//public functions
 		void setup()         // setup takes a name of a stored estimate in memory
 		void print()         // prints object properties to screen
-		`SS' get_beta()      // returns beta as string for a given factor
-		`SS' get_pvalue()    // returns pvalue as string for a given factor
-		`SS' get_ci()        // returns ci as string for a given factor
+		`SS' get_beta()      // returns beta as string for a given level
+		`SS' get_pvalue()    // returns pvalue as string for a given level
+		`SS' get_ci()        // returns ci as string for a given level
 		
 	private:
 	    // private vars
@@ -67,12 +67,26 @@ class model {
 		statistics= statistics[.,2] 		//remove first col that is all missing
 		parameters= parameters[.,2] 		//remove first col that is all missing
 		
-		interactions= J(length(parameters), 1, .)
-		
 		set_levels()
 		set_interactions()
 		set_base()
+		set_constfree()
 		
+	}
+	/***************************************************************************
+	Function prints object properties to screen
+	****************************************************************************/
+	void model::set_constfree() {
+		real scalar r
+
+		
+		this.constfree= J(length(this.parameters), 1, .)
+		
+		for (r=1; r<=length(this.parameters); r++) {
+			// match paramaters that has _/ at beginning of string
+			this.constfree[r]= regexm(this.parameters[r], "^[_/]")
+		}
+			
 		
 	}
 	/***************************************************************************
@@ -171,20 +185,46 @@ class model {
 		//this.parameters, this.levels, strofreal(this.interactions), strofreal(this.base)) 
 		
 		printf("{txt}--- Object model: --------------------------------------\n")
-		                        //5                      17
-		printf("{txt}{space 1}Row{space 1}{c |}{space 2}parameters{col 40}{c |} # {c |} B {c |}{space 2}levels{col 83}{c |}\n")
-        printf("{hline 5}{c +}{hline 33}{c +}{hline 32}{c +}{hline 3}{c +}{hline 3}{c +}\n")
+		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}\n\n")
+		//hline 1
+		printf("{hline 4 }{c +}") //5
+		printf("{hline 34}{c +}") //40
+		printf("{hline 3 }{c +}") //44
+		printf("{hline 3 }{c +}") //48
+		printf("{hline 3 }{c +}") //52
+		printf("{hline 26}{c +}\n") //79
+		//hline 2
+		printf("{txt}{space 2}R{space 1}{c |}")
+		printf("{space 1}parameters{col 40}{c |}")
+		printf("{space 1}#{space 1}{c |}")
+		printf("{space 1}B{space 1}{c |}")
+		printf("{space 1}C{space 1}{c |}")
+		printf("{space 1}levels{col 79}{c |}\n")
+		//hline 2
+		printf("{hline 4 }{c +}") //5
+		printf("{hline 34}{c +}") //40
+		printf("{hline 3 }{c +}") //44
+		printf("{hline 3 }{c +}") //48
+		printf("{hline 3 }{c +}") //52
+		printf("{hline 26}{c +}\n") //79
+		// lines table
 		for (i=1; i<=length(this.parameters); i++) {
 			
-			            tabrowtxt= "{result}%4.0f{space 1}{txt}{c |}"
-			tabrowtxt= tabrowtxt + "{result} %s{col 40}{txt}{c |}"
-			tabrowtxt= tabrowtxt + "{result}%3.0f{txt}{c |}"
+			            tabrowtxt= "{result}{space 1}%2.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%s{col 40}{txt}{c |}"
 			tabrowtxt= tabrowtxt + "{result}{space 1}%1.0f{space 1}{txt}{c |}"
-			tabrowtxt= tabrowtxt + "{result}%s{col 73}{txt}{c |}\n"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%1.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%1.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%s{col 79}{txt}{c |}\n"
 			
-			printf(tabrowtxt, i, this.parameters[i], this.interactions[i], this.base[i], this.levels[i])
+			printf(tabrowtxt, i, this.parameters[i], this.interactions[i], this.base[i], this.constfree[i], this.levels[i])
 		}
-		printf("{txt}{hline 5}{c BT}{hline 33}{c BT}{hline 32}{c BT}{hline 3}{c BT}{hline 3}{c BT}\n")
+		printf("{txt}{hline 4}{c BT}")
+		printf("{hline 34}{c BT}")
+		printf("{hline 3 }{c BT}")
+		printf("{hline 3 }{c BT}")
+		printf("{hline 3 }{c BT}")
+		printf("{hline 26}{c BT}\n")
 		
 		
 		
