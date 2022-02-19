@@ -67,18 +67,17 @@ class model {
 		statistics= statistics[.,2] 		//remove first col that is all missing
 		parameters= parameters[.,2] 		//remove first col that is all missing
 		
-		set_levels()
-		set_interactions()
-		set_base()
-		set_constfree()
+		set_levels()        //set the string vector levels contining pramters with base/omitted stripped
+		set_interactions()  //set the boolean vector indicating if parameter/level is an interaction
+		set_base()          //set the boolean vector indicating if parameter/level is base/omitted
+		set_constfree()     //set the boolean vector indicating if parameter/level is _const or free
 		
 	}
 	/***************************************************************************
-	Function prints object properties to screen
+	Function sets the boolean vector indicating if parameter/level is _const or free
 	****************************************************************************/
 	void model::set_constfree() {
 		real scalar r
-
 		
 		this.constfree= J(length(this.parameters), 1, .)
 		
@@ -90,7 +89,7 @@ class model {
 		
 	}
 	/***************************************************************************
-	Function prints object properties to screen
+	Function sets the string vector levels contining pramters with base/omitted stripped
 	****************************************************************************/
 	void model::set_levels() {
 		real scalar r
@@ -111,7 +110,7 @@ class model {
 		
 	}
 	/***************************************************************************
-	Function prints object properties to screen
+	Function sets the boolean vector indicating if parameter/level is an interaction
 	****************************************************************************/
 	void model::set_interactions() {
 		`RS' r
@@ -123,7 +122,7 @@ class model {
 		}
 	}
 	/***************************************************************************
-	Function sets boolean vector 
+	Function sets the boolean vector indicating if parameter/level is base/omitted
 	****************************************************************************/
 	void model::set_base() {
 		`RS' r, i, baseom
@@ -134,10 +133,8 @@ class model {
 			
 		for (r=1; r<=length(this.parameters); r++) {
 		
-			
 			if (this.interactions[r]) {
 				//check if all incuded factors in interaction are base or omitted
-				
 				intervars=tokens(subinstr(this.parameters[r], "#", " ") ) //matrix with varnames forming the interaction
 				
 				baseom= 0
@@ -150,27 +147,14 @@ class model {
 				}
 				
 				// check if all factors are base or omitted
-				if(length(intervars)==baseom) this.base[r]= `TRUE'
-				else this.base[r]= `FALSE'
+				this.base[r]= (length(intervars)==baseom)
 			
 			}
-			else {
-				
-				// if it is not an interaction
-			
+			else {	// if it is not an interaction
 				prefix= substr(this.parameters[r] , 1 , strrpos(this.parameters[r],".")-1)
-		
-				if(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o") > 0) this.base[r]= `TRUE'
-				else this.base[r]= `FALSE'
-
+				this.base[r]=(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o") > 0) 
 			}	
-		
-	
-		
-
-		}
-			
-		
+		}		
 	}
 	/***************************************************************************
 	Function prints object properties to screen
