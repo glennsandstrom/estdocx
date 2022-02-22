@@ -471,9 +471,10 @@ class model {
 		//public functions
 		void setup()         // setup takes a name of a stored estimate in memory
 		void print()         // prints object properties to screen
-		`SS' get_beta()      // returns beta as string for a given level
-		`SS' get_pvalue()    // returns pvalue as string for a given level
-		`SS' get_ci()        // returns ci as string for a given level
+		`RS' get_beta()      // returns beta as string for a given level
+		`RS' get_pvalue()    // returns pvalue as string for a given level
+		`RS' get_ll()        // returns lower bound of ci as string for a given level
+		`RS' get_ul()        // returns upper bound of ci as string for a given level
 		
 	private:
 	    // private vars
@@ -527,14 +528,16 @@ class model {
 		
 	}
 	/***************************************************************************
-	Function returns formated beta-value string for model, param 
+	Function returns beta-value string param 
 	****************************************************************************/
-	`SS' model::get_beta(`SS' level, `SS' bfmt) {
-		string scalar beta
-				
-		beta= sprintf(bfmt, this.rtable.get(("b", level)))
-		
-		return(beta)
+	`RS' model::get_beta(`SS' level) {
+		return(this.rtable.get(("b", level)))
+	}
+	/***************************************************************************
+	Function returns p-value string param 
+	****************************************************************************/
+	`RS' model::get_pvalue(`SS' level) {
+		return(this.rtable.get(("pvalue", level)))
 	}
 	/***************************************************************************
 	Function sets the boolean vector indicating if parameter/level is _const or free
@@ -736,7 +739,6 @@ class rowvarlist {
 
 		
 	}
-
 /*#######################################################################################*/
 // CLASS estdocxtable
 /*#######################################################################################*/
