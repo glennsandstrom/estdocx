@@ -471,10 +471,10 @@ class model {
 		//public functions
 		void setup()         // setup takes a name of a stored estimate in memory
 		void print()         // prints object properties to screen
-		`RS' get_beta()      // returns beta as string for a given level
-		`RS' get_pvalue()    // returns pvalue as string for a given level
-		`RS' get_ll()        // returns lower bound of ci as string for a given level
-		`RS' get_ul()        // returns upper bound of ci as string for a given level
+		`RS' get_beta()      // returns beta as real for a given level
+		`RS' get_pvalue()    // returns pvalue as real for a given level
+		`RS' get_ll()        // returns lower bound of ci as real for a given level
+		`RS' get_ul()        // returns upper bound of ci as real for a given level
 		
 	private:
 	    // private vars
@@ -538,6 +538,18 @@ class model {
 	****************************************************************************/
 	`RS' model::get_pvalue(`SS' level) {
 		return(this.rtable.get(("pvalue", level)))
+	}
+	/***************************************************************************
+	Function returns upper bound of ci as real
+	****************************************************************************/
+	`RS' model::get_ul(`SS' level) {
+		return(this.rtable.get(("ul", level)))
+	}
+		/***************************************************************************
+	Function returns lower bound of ci as real
+	****************************************************************************/
+	`RS' model::get_ll(`SS' level) {
+		return(this.rtable.get(("ll", level)))
 	}
 	/***************************************************************************
 	Function sets the boolean vector indicating if parameter/level is _const or free
