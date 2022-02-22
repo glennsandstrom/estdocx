@@ -53,6 +53,7 @@ class model {
 	#######################################################################################*/
 	void model::setup(string scalar estname) {
 		string scalar com
+		real scalar i, ii
 				
 		//get matrix rtable created by running estimates replay estname
 		com= "estimates replay " + estname
@@ -62,6 +63,7 @@ class model {
 		stata("mat M= M'")
 		
 		modscalars= st_matrix("M")
+
 		parameters= st_matrixrowstripe("M") //get varlist of model
 		statistics= st_matrixcolstripe("M") //get stats of model
 		statistics= statistics[.,2] 		//remove first col that is all missing
@@ -72,7 +74,29 @@ class model {
 		set_base()          //set the boolean vector indicating if parameter/level is base/omitted
 		set_constfree()     //set the boolean vector indicating if parameter/level is _const or free
 		
+		// fill array rtable with data from modscalars for each statistics
+		// reinitate the assositative array as array with 3 dimention string keys
+		this.rtable.reinit("string", 2) 
+		this.rtable.notfound(.)
+		
+			for (ii=1; ii<=length(this.statistics); ii++) {
+				for (i=1; i<=length(this.levels); i++) {
+					this.rtable.put((this.statistics[ii], this.levels[i]), this.modscalars[i,ii])
+				}
+			}
+		
 	}
+	/***************************************************************************
+	Function returns formated beta-value string for model, param 
+	****************************************************************************/
+	`SS' model::get_beta(`SS' level, `SS' bfmt) {
+		string scalar beta
+				
+		beta= sprintf(bfmt, this.rtable.get(("b", level)))
+		
+		return(beta)
+	}
+	
 	/***************************************************************************
 	Function sets the boolean vector indicating if parameter/level is _const or free
 	****************************************************************************/
@@ -169,7 +193,9 @@ class model {
 		//this.parameters, this.levels, strofreal(this.interactions), strofreal(this.base)) 
 		
 		printf("{txt}--- Object model: --------------------------------------\n")
-		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}\n\n")
+		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}")
+		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}")
+		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}\n\n")
 		//hline 1
 		printf("{hline 4 }{c +}") //5
 		printf("{hline 34}{c +}") //40
