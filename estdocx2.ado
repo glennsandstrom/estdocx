@@ -755,7 +755,7 @@ class estdocxtable {
 		//public vars
 		class     model colvector models
 		class     rowvarlist scalar rowvarlist    // computes the uniq ordered list of levels that form the rows of table
-		string    colvector parameters            // uniq ordered list of pramameters
+		string    colvector levels                // uniq ordered list of pramameters
 		string    scalar    varnames                 // uniq ordered list of varnames
 		string    scalar    fname                    // framename used to store the table
 		string    scalar    bfmt                     // %fmt for beta
@@ -840,7 +840,7 @@ class estdocxtable {
 
 		
 		//find maximum number of characthers of in parameters
-		mpl=max(strlen(this.parameters))
+		mpl=max(strlen(this.levels))
 		colwidh= "str" + strofreal(mpl) // stringfomrat mpl number of characthers
 		// add column for paramters with a widh/characthers of the longest parameter
 		varindex= st_addvar(colwidh, "params")
@@ -852,14 +852,14 @@ class estdocxtable {
 				
 		
 		// add rows euqal
-		st_addobs(length(this.parameters))
+		st_addobs(length(this.levels))
 
 		
 		st_sview(table, ., .)  // load dataset from stata
 		
-		for (i=1; i<=length(this.parameters); i++) {
+		for (i=1; i<=length(this.levels); i++) {
 			// write full parameter text to row header
-			table[i,1]= this.parameters[i]
+			table[i,1]= this.levels[i]
 			
 			
 			// get stats for each model and form the celltext
@@ -965,8 +965,8 @@ class estdocxtable {
 		"varnames"
 		this.varnames
 		
-		"paramters"
-		this.parameters
+		"levels"
+		this.levels
 		printf("{txt}baselevels is:{result} %f\n", this.baselevels)
 		printf("{txt}bfmt is:{result} %s\n", this.bfmt)
 		printf("{txt}ci is:{result} %s\n", this.ci)
