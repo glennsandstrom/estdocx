@@ -574,7 +574,7 @@ class model {
 	`RS' model::get_ul(`SS' level) {
 		return(this.rtable.get(("ul", level)))
 	}
-		/***************************************************************************
+	/***************************************************************************
 	Function returns lower bound of ci as real
 	****************************************************************************/
 	`RS' model::get_ll(`SS' level) {
@@ -762,7 +762,7 @@ class estdocxtable {
 		void   create_display()
 		`SS'   get_beta()
 		//`SS'   get_pvalue()
-		//`SS'   get_ci()
+		`SS'   get_ci()
 		
 }
 /*#######################################################################################
@@ -805,7 +805,7 @@ class estdocxtable {
 	
 	this.bfmt= bfmt_txt // default is %04.2f set in main of ado
 	
-	if(ci_txt!="") this.ci= ci
+	if(ci_txt!="") this.ci= ci_txt
 	
 	
 
@@ -923,11 +923,11 @@ class estdocxtable {
 				
 				//always get beta
 				paramtext= this.get_beta(this.models[ii], this.levels[i])
-				/*
+				
 				
 				// if ci is TRUE add/get CI, that it is valied fmt is confirmed in main ado
-				if(this.ci!="") paramtext= paramtext + this.get_ci(this.estnames[ii], this.parameters[i])
-				
+				if(this.ci!="") paramtext= paramtext + this.get_ci(this.models[ii], this.levels[i])
+				/*
 				
 				//add/get p-value
 				pvalue= this.get_pvalue(this.estnames[ii], this.parameters[i])
@@ -947,17 +947,33 @@ class estdocxtable {
 	Function returns formated beta-value string for model, param 
 	****************************************************************************/
 	`SS' estdocxtable::get_beta(class model scalar mod, `SS' level) {
-		
 		string scalar beta
-		
-		
 		
 		if(mod.get_base(level))	beta= "(base)"
 		else beta= sprintf(this.bfmt, mod.get_beta(level))
+		
 		return(beta)
 		
 	}
-/*
+	/***************************************************************************
+	Function returns formated CI string for model, param 
+	****************************************************************************/
+	`SS' estdocxtable::get_ci(class model scalar mod, `SS' level) {
+		string scalar ci, lowb, highb
+		real scalar ll, ul
+		
+		ll= mod.get_ll(level)
+		ul= mod.get_ul(level)
+		
+		// 95% CIs
+		lowb= strofreal(ll, this.ci)
+		highb= strofreal(ul, this.ci)
+		if(lowb!=".") ci= " (" + lowb + " " + highb + ")"
+				
+		return(ci)
+		
+	}
+	/*
 	/***************************************************************************
 	Function returns formated p-value string for model, param 
 	****************************************************************************/
@@ -983,24 +999,6 @@ class estdocxtable {
 		
 
 		return(pvalue)
-		
-	}
-	/***************************************************************************
-	Function returns formated CI string for model, param 
-	****************************************************************************/
-	`SS' estdocxtable::get_ci(`SS' model, `SS' param) {
-		string scalar ci, lowb, highb
-		real scalar ll, ul
-		
-		ll= this.rtables.get((model, "ll", param))
-		ul= this.rtables.get((model, "ul", param))
-		
-		// 95% CIs
-		lowb= strofreal(ll, this.ci)
-		highb= strofreal(ul, this.ci)
-		if(lowb!=".") ci= " (" + lowb + "-" + highb + ")"
-				
-		return(ci)
 		
 	}
 	*/
