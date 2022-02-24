@@ -701,69 +701,17 @@ class model {
 		
 	}	
 /*#######################################################################################*/
-// CLASS rowvarlist
-/*#######################################################################################*/
-class rowvarlist {
-	public:
-		//public vars
-		string colvector unique
-		string colvector constants
-		
-		//public functions
-		void setup() // setup takes a namlist of stored estimates
-		void print()
-		
-}
-	/*#######################################################################################
-	// CLASS rowvarlist FUNCTIONS
-	#######################################################################################*/
-	/***************************************************************************
-	Function takes a vector of model objects models and returns the unique
-	list of pramameters with all duplicates removed => function as the rows
-	of the regression table
-	****************************************************************************/
-	void rowvarlist::setup(class model colvector models) {
-
-	real scalar i, ii, found
-	string scalar param, varname, prefix, find
-
-		//declare colvector allvars
-		this.constants= J(0, 1, "")
-		
-	
-		for (i=1; i<=length(models); i++) {
-			for (ii=1; ii<=length(models[i].parameters); ii++) {
-				// if it is constant or free and adding it to this.constants
-				if(regexm(models[i].parameters[ii], "^[_/]")) {
-					if(!anyof(this.constants, models[i].parameters[ii])) this.constants=this.constants\models[i].parameters[ii]
-				}
-				else { // if it is not free/const add it to unique if it is not already a member of unique
-					if(!anyof(this.unique, models[i].parameters[ii])) this.unique= this.unique\models[i].parameters[ii]
-				}
-				
-			}
-		
-			
-		}
-		
-		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
-		this.unique= this.unique\this.constants
-
-		
-	}
-/*#######################################################################################*/
 // CLASS estdocxtable
 /*#######################################################################################*/
 class estdocxtable {
 	public:
 		//public vars
 		class     model colvector models
-		class     rowvarlist scalar rowvarlist    // computes the uniq ordered list of levels that form the rows of table
 		string    colvector levels                // uniq ordered list of pramameters
-		string    scalar    varnames                 // uniq ordered list of varnames
-		string    scalar    fname                    // framename used to store the table
-		string    scalar    bfmt                     // %fmt for beta
-		string    scalar    ci                       // %fmt for confidence interval
+		string    scalar    varnames              // uniq ordered list of varnames
+		string    scalar    fname                 // framename used to store the table
+		string    scalar    bfmt                  // %fmt for beta
+		string    scalar    ci                    // %fmt for confidence interval
 		`boolean' scalar    eform
 		`boolean' scalar    baselevels
 		real      colvector star                  // numeric vector of sig < P cuttofs for * significnase markers
@@ -792,28 +740,61 @@ class estdocxtable {
 		real scalar i
 		string colvector allparams
 
-
-		
 		// convert string scalar to string vector of estnames
-		this.estnames= tokens(estnames_txt)
+		estnames= tokens(estnames_txt)
 		
-		//declare object colvector models
-		models= J(0, 1, "")
-		/*
+		//return colvector model objects
+		models= model(length(estnames))
+		
+		// run setup of model objects for estnames
 		for (i=1; i<=length(estnames); i++) {
-			if(!length(models)) models= model.setup(estname[i])
-			else reduced= models\model.setup(estname[i])
-			
+			models[i].setup(estnames[i])
+			//models[i].print()
 		}
-		*/	
 		
-
-		//this.rowvarlist.setup(models)
-		//this.parameters = this.rowvarlist.unique
+		this.set_ulevels()
+		
 				
 				
 	}
+	/***************************************************************************
+	Function takes a vector of model objects models and returns the unique
+	list of levels with all duplicates removed => function as the rows
+	of the regression table
+	****************************************************************************/
+	void estdocxtable::set_ulevels() {
+	string colvector constants
+	real scalar i, ii
+	
+	
+		//declare colvector constants
+		constants= J(0, 1, "")
+		
 
+		for (i=1; i<=length(this.models); i++) {
+			this.models[i].print()
+		
+			for (ii=1; ii<=length(this.models[i].levels); ii++) {
+				//printf("{result}{space 1}%s{col 79}{txt}\n", this.models[i].levels[ii])
+					
+				// if it is constant or free and not in this.constants add it to constants
+				if(this.models[i].constfree[ii]) {
+					if(!anyof(constants, this.models[i].levels[ii])) constants= constants\this.models[i].levels[ii]
+				}
+				else { // if it is not free/const add it to levels if it is not already a member of levels
+					if(!anyof(this.levels, this.models[i].levels[ii])) this.levels= this.levels\this.models[i].levels[ii]
+				}
+				
+			}
+		
+			
+		}
+		
+		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
+		this.levels= this.levels\constants
+
+		
+	}
 	/***************************************************************************
 	Function writes paramters for all estnames to display frame
 	****************************************************************************/
