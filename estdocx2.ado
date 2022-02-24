@@ -470,13 +470,14 @@ class model {
 		real   colvector constfree     // vector of boolean values indicating if parameter[row] is _const or free
 		
 		//public functions
-		void             setup()        // setup takes a name of a stored estimate in memory
-		void             print()        // prints object properties to screen
-		`RS'             get_beta()     // returns beta as real for a given level
-		`RS'             get_pvalue()   // returns pvalue as real for a given level
-		`RS'             get_ll()       // returns lower bound of ci as real for a given level
-		`RS'             get_ul()       // returns upper bound of ci as real for a given level
-		`boolean' scalar get_base()     // returns boolean==TRUE if level is a base
+		void             setup()            // setup takes a name of a stored estimate in memory
+		void             print()            // prints object properties to screen
+		`RS'             get_beta()         // returns beta as real for a given level
+		`RS'             get_pvalue()       // returns pvalue as real for a given level
+		`RS'             get_ll()           // returns lower bound of ci as real for a given level
+		`RS'             get_ul()           // returns upper bound of ci as real for a given level
+		`boolean' scalar get_base()         // returns boolean==TRUE if level is a base
+		`boolean' scalar get_intr()         // returns boolean==TRUE if level is a base
 		
 	private:
 	    // private vars
@@ -530,7 +531,7 @@ class model {
 		
 	}
 	/***************************************************************************
-	Function returns beta-value for supplied level
+	Function returns boolean TRUE if supplied level is a baselevel
 	****************************************************************************/
 	`RS' model::get_base(`SS' level) {
 		`RS' i
@@ -540,6 +541,19 @@ class model {
 		// will return J(0,0,.) an empty real vector and not a scalar
 
 		if(orgtype(i) == "scalar") return(this.base[i])
+		else return(`FALSE')
+	}
+	/***************************************************************************
+	Function returns boolean TRUE if supplied level is an interaction
+	****************************************************************************/
+	`RS' model::get_intr(`SS' level) {
+		`RS' i
+		
+		i= selectindex(regexm(this.levels, "^" + level + "$"))
+		//In cases where level is not in the list of model levels selectindex()
+		// will return J(0,0,.) an empty real vector and not a scalar
+
+		if(orgtype(i) == "scalar") return(this.interactions[i])
 		else return(`FALSE')
 	}
 	/***************************************************************************
@@ -898,6 +912,8 @@ class estdocxtable {
 	`SS' estdocxtable::get_beta(class model scalar mod, `SS' level) {
 		
 		string scalar beta
+		
+		
 		
 		if(mod.get_base(level))	beta= "(base)"
 		else beta= sprintf(this.bfmt, mod.get_beta(level))
