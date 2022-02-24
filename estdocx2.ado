@@ -151,15 +151,15 @@ program estdocx
 		
 **# Bookmark #1
 
-		mata: create_frame_table("`estnames'",     /// 
-		                         "`keep'",       ///
+		mata: create_frame_table("`estnames'",     ///
 								 "`baselevels'", ///
 								 "`bfmt'",       ///
 								 "`ci'",         /// 
 								 "`star'",       ///
 								 " `Nop'",       ///
 								 "`eform'",       ///
-								 "`fname'"       ///
+								 "`fname'",       ///
+								  "`keep'"      ///
 								 )
 	
 /*
@@ -744,7 +744,7 @@ class estdocxtable {
 		string    scalar    ci                    // %fmt for confidence interval
 		`boolean' scalar    eform
 		`boolean' scalar    baselevels
-		real      colvector star                  // numeric vector of sig < P cuttofs for * significnase markers
+		real      colvector star                  // numeric vector of sig < P cuttofs for * significanse markers
 		
 		//public functions
 		void      setup()                          // setup takes a namlist of stored estimates
@@ -768,7 +768,16 @@ class estdocxtable {
 /*#######################################################################################
 // CLASS estdocxtable FUNCTIONS
 #######################################################################################*/
-	void estdocxtable::setup(`SS' estnames_txt) {
+	void estdocxtable::setup(`SS' estnames_txt,
+					       | `SS' baselevels_txt,
+		                     `SS' bfmt_txt,
+		                     `SS' ci_txt,
+		                     `SS' star_txt,
+		                     `SS' Nop_txt,
+		                     `SS' eform_txt,
+						     `SS' fname_txt,
+					         `SS' keep_txt
+						   ) {
 		real scalar i
 		string colvector allparams
 
@@ -784,7 +793,23 @@ class estdocxtable {
 			//models[i].print()
 		}
 		
-		this.set_ulevels()
+	// set options in table object
+	if(star_txt!="") this.star= strtoreal(tokens(star_txt))
+	
+	// set options in table object
+	if(baselevels_txt=="baselevels") this.baselevels= `TRUE'
+	else this.baselevels= `FALSE'
+	
+	if(eform_txt=="eform") this.eform= `TRUE'
+	else this.eform= `FALSE'
+	
+	this.bfmt= bfmt_txt // default is %04.2f set in main of ado
+	
+	if(ci_txt!="") this.ci= ci
+	
+	
+
+	this.set_ulevels()
 		
 				
 				
@@ -797,6 +822,7 @@ class estdocxtable {
 	void estdocxtable::set_ulevels() {
 	string colvector constants
 	real scalar i, ii
+	string scalar level
 	
 	
 		//declare colvector constants
@@ -804,23 +830,34 @@ class estdocxtable {
 		
 
 		for (i=1; i<=length(this.models); i++) {
-			this.models[i].print()
 		
 			for (ii=1; ii<=length(this.models[i].levels); ii++) {
-				//printf("{result}{space 1}%s{col 79}{txt}\n", this.models[i].levels[ii])
+				level= this.models[i].levels[ii]
 					
 				// if it is constant or free and not in this.constants add it to constants
 				if(this.models[i].constfree[ii]) {
-					if(!anyof(constants, this.models[i].levels[ii])) constants= constants\this.models[i].levels[ii]
-				}
-				else { // if it is not free/const add it to levels if it is not already a member of levels
-					if(!anyof(this.levels, this.models[i].levels[ii])) this.levels= this.levels\this.models[i].levels[ii]
+					if(!anyof(constants, level)) constants= constants\level
 				}
 				
+				// if it is not an interaction add it regardless and jump to next level
+				else if(!this.models[i].get_intr(level)) { 
+					if(!anyof(this.levels, level)) this.levels= this.levels\level
+				}
+				
+				// if it is an interaction and not a baselevel add it and jump to next level
+				else if(!this.models[i].get_base(level)) { 
+					if(!anyof(this.levels, level)) this.levels= this.levels\level
+				}
+				// if baselevels add it anyway and jump to next level
+				else if(this.baselevels==`TRUE') { 
+					if(!anyof(this.levels, level)) this.levels= this.levels\level
+				}
+			
 			}
 		
 			
 		}
+	
 		
 		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
 		this.levels= this.levels\constants
@@ -968,12 +1005,6 @@ class estdocxtable {
 	}
 	*/
 	/***************************************************************************
-	Function set the star-option 
-	****************************************************************************/
-	void estdocxtable::set_star(`SS' star) {
-		this.star= strtoreal(tokens(star))
-   	}
-	/***************************************************************************
 	Function displays table of object propreties
 	****************************************************************************/
 	void estdocxtable::print() {
@@ -997,39 +1028,34 @@ class estdocxtable {
 //# Bookmark #2
 
 void create_frame_table(`SS' estnames,
-                      | `SS' keep,
-					    `SS' baselevels,
+					  | `SS' baselevels,
 		                `SS' bfmt,
 		                `SS' ci,
 		                `SS' star,
 		                `SS' Nop,
 		                `SS' eform,
-						`SS' fname
+						`SS' fname,
+					    `SS' keep
 		                ) {
 	//declare function objects, structures and variables						
 	class estdocxtable scalar table
 	
 	print_opts(estnames, keep, bfmt, ci, star, baselevels, Nop, eform, fname)
 	
-	// set up table objects
+	// set set all table propreties to default values values
 
+	// I need to set up all the options in the setup function for teh class to work
+	table.setup(estnames,
+				baselevels,
+		        bfmt,
+		        ci,
+		        star,
+		        Nop,
+		        eform,
+				fname,
+				keep)
 
-	table.setup(estnames)
-
-	// set options in table object
-	if(star!="") table.set_star(star)
 	
-	// set options in table object
-	if(baselevels=="baselevels") table.baselevels= `TRUE'
-	else table.baselevels= `FALSE'
-	
-
-	table.bfmt= bfmt // default is %04.2f set in main of ado
-	
-	if(ci!="") table.ci= ci
-	
-	if(eform=="eform") table.eform= `TRUE'
-	else table.eform= `FALSE'
 	
 	
 	
