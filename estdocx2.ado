@@ -454,6 +454,7 @@ class parameter {
 	}
 /*#######################################################################################*/
 // CLASS model
+//# Bookmark #5
 /*#######################################################################################*/
 class model {
 	public:
@@ -469,12 +470,13 @@ class model {
 		real   colvector constfree     // vector of boolean values indicating if parameter[row] is _const or free
 		
 		//public functions
-		void setup()         // setup takes a name of a stored estimate in memory
-		void print()         // prints object properties to screen
-		`RS' get_beta()      // returns beta as real for a given level
-		`RS' get_pvalue()    // returns pvalue as real for a given level
-		`RS' get_ll()        // returns lower bound of ci as real for a given level
-		`RS' get_ul()        // returns upper bound of ci as real for a given level
+		void             setup()        // setup takes a name of a stored estimate in memory
+		void             print()        // prints object properties to screen
+		`RS'             get_beta()     // returns beta as real for a given level
+		`RS'             get_pvalue()   // returns pvalue as real for a given level
+		`RS'             get_ll()       // returns lower bound of ci as real for a given level
+		`RS'             get_ul()       // returns upper bound of ci as real for a given level
+		`boolean' scalar get_base()     // returns boolean==TRUE if level is a base
 		
 	private:
 	    // private vars
@@ -528,7 +530,20 @@ class model {
 		
 	}
 	/***************************************************************************
-	Function returns beta-value string param 
+	Function returns beta-value for supplied level
+	****************************************************************************/
+	`RS' model::get_base(`SS' level) {
+		`RS' i
+		
+		i= selectindex(regexm(this.levels, "^" + level + "$"))
+		//In cases where level is not in the list of model levels selectindex()
+		// will return J(0,0,.) an empty real vector and not a scalar
+
+		if(orgtype(i) == "scalar") return(this.base[i])
+		else return(`FALSE')
+	}
+	/***************************************************************************
+	Function returns beta-value for supplied level
 	****************************************************************************/
 	`RS' model::get_beta(`SS' level) {
 		return(this.rtable.get(("b", level)))
@@ -702,6 +717,7 @@ class model {
 	}	
 /*#######################################################################################*/
 // CLASS estdocxtable
+//# Bookmark #3
 /*#######################################################################################*/
 class estdocxtable {
 	public:
@@ -722,13 +738,15 @@ class estdocxtable {
 		void      print()
 		void      set_star()
 		
+		
 	private:
 		//private vars
 		string vector estnames              // vector of the name of estimates
 		
 		//private functions
+		void   set_ulevels()                // computes the uniq ordered list of levels that form the rows of table
 		void   create_display()
-		//`SS'   get_beta()
+		`SS'   get_beta()
 		//`SS'   get_pvalue()
 		//`SS'   get_ci()
 		
@@ -821,7 +839,7 @@ class estdocxtable {
 		st_framecurrent(this.fname)
 		
 		//remove base and omitted from interaction paramteters if baselevels is FALSE
-		if(!this.baselevels) remove_baselevels()
+		//if(!this.baselevels) remove_baselevels()
 
 		
 		//find maximum number of characthers of in parameters
@@ -848,13 +866,13 @@ class estdocxtable {
 			
 			
 			// get stats for each model and form the celltext
-			for (ii=1; ii<=length(this.estnames); ii++) {
+			for (ii=1; ii<=length(this.models); ii++) {
 				c= ii+1
 				
-				/*
-				//always get beta
-				paramtext= this.get_beta(this.estnames[ii], this.parameters[i])
 				
+				//always get beta
+				paramtext= this.get_beta(this.models[ii], this.levels[i])
+				/*
 				
 				// if ci is TRUE add/get CI, that it is valied fmt is confirmed in main ado
 				if(this.ci!="") paramtext= paramtext + this.get_ci(this.estnames[ii], this.parameters[i])
@@ -863,31 +881,30 @@ class estdocxtable {
 				//add/get p-value
 				pvalue= this.get_pvalue(this.estnames[ii], this.parameters[i])
 				paramtext= paramtext + pvalue
-				
+				*/
 				// write full parameter text to cell in display frame
 				table[i,c]= paramtext
-				*/
+				
 			}
 		}
 		
 		
 
 	}
-/*
+
 	/***************************************************************************
 	Function returns formated beta-value string for model, param 
 	****************************************************************************/
-	`SS' estdocxtable::get_beta(`SS' model, `SS' param) {
+	`SS' estdocxtable::get_beta(class model scalar mod, `SS' level) {
 		
 		string scalar beta
-		real scalar B
 		
-		
-		beta= sprintf(this.bfmt, this.rtables.get((model, "b", param)))
-		
+		if(mod.get_base(level))	beta= "(base)"
+		else beta= sprintf(this.bfmt, mod.get_beta(level))
 		return(beta)
 		
 	}
+/*
 	/***************************************************************************
 	Function returns formated p-value string for model, param 
 	****************************************************************************/
@@ -947,9 +964,6 @@ class estdocxtable {
 		printf("{txt}--- Object estdocxtable: --------------------------------------\n")
 		"estnames" 
 		this.estnames
-		"varnames"
-		this.varnames
-		
 		"levels"
 		this.levels
 		printf("{txt}baselevels is:{result} %f\n", this.baselevels)
@@ -982,8 +996,10 @@ void create_frame_table(`SS' estnames,
 	print_opts(estnames, keep, bfmt, ci, star, baselevels, Nop, eform, fname)
 	
 	// set up table objects
+
+
 	table.setup(estnames)
-	/*
+
 	// set options in table object
 	if(star!="") table.set_star(star)
 	
@@ -1006,7 +1022,7 @@ void create_frame_table(`SS' estnames,
 	
 	
 	table.create_display_frame(fname)
-	*/
+
 	table.print()
 	
 	
