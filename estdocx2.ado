@@ -83,7 +83,7 @@ program estdocx
 		[keep(string)] ///
 		[pagesize(string)] ///
 		[landscape] ///
-		[Nop] ///
+		[Nopval] ///
 		[eform] ///
 		[fname(string)] 
 		
@@ -156,7 +156,7 @@ program estdocx
 								 "`bfmt'",       ///
 								 "`ci'",         /// 
 								 "`star'",       ///
-								 " `Nop'",       ///
+								 "`nopval'",       ///
 								 "`eform'",       ///
 								 "`fname'",       ///
 								  "`keep'"      ///
@@ -215,7 +215,7 @@ putdocx save temp/estocx.docx, replace
 	// print a legend with significance values
 	/**************************************************************************/
 	qui putdocx describe esttable
-	if("`star'"!="none" & "`nop'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
+	if("`star'"!="none" & "`nopval'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
 	/**************************************************************************/
 	/** Save worddocument if program is not in inline mode           **/
 	/**************************************************************************/
@@ -744,6 +744,7 @@ class estdocxtable {
 		string    scalar    ci                    // %fmt for confidence interval
 		`boolean' scalar    eform
 		`boolean' scalar    baselevels
+		`boolean' scalar    nopval
 		real      colvector star                  // numeric vector of sig < P cuttofs for * significanse markers
 		
 		//public functions
@@ -773,7 +774,7 @@ class estdocxtable {
 		                     `SS' bfmt_txt,
 		                     `SS' ci_txt,
 		                     `SS' star_txt,
-		                     `SS' Nop_txt,
+		                     `SS' nopval_txt,
 		                     `SS' eform_txt,
 						     `SS' fname_txt,
 					         `SS' keep_txt
@@ -795,6 +796,10 @@ class estdocxtable {
 		
 	// set options in table object
 	if(star_txt!="") this.star= strtoreal(tokens(star_txt))
+	
+	// set option nopval
+	if(nopval_txt=="nopval") this.nopval= `TRUE'
+	else this.nopval= `FALSE'
 	
 	// set options in table object
 	if(baselevels_txt=="baselevels") this.baselevels= `TRUE'
@@ -871,7 +876,7 @@ class estdocxtable {
 	void estdocxtable::create_display_frame(| string scalar fname) {
 		string matrix table
 		string colvector frames
-		string scalar colwidh, pvalue, ci, paramtext
+		string scalar colwidh, paramtext
 		real scalar i, ii, mpl, c, varindex
 		
 
@@ -931,8 +936,7 @@ class estdocxtable {
 			
 				
 				//add/get p-value
-				pvalue= this.get_pvalue(this.models[ii], this.levels[i])
-				paramtext= paramtext + pvalue
+				if(!this.nopval) paramtext= paramtext + this.get_pvalue(this.models[ii], this.levels[i])
 			
 				// write full parameter text to cell in display frame
 				table[i,c]= paramtext
@@ -1004,17 +1008,36 @@ class estdocxtable {
 	Function displays table of object propreties
 	****************************************************************************/
 	void estdocxtable::print() {
-		printf("{txt}--- Object estdocxtable: --------------------------------------\n")
-		"estnames" 
-		this.estnames
-		"levels"
-		this.levels
+		real scalar i
+		printf("{txt}{hline 80}\n")
+		printf("{txt}------------------ OBJECT ESTDOCXTABLE: -----------------------------------\n")
+		printf("{txt}{hline 80}\n")
+		printf("{txt}estnames is:")
+		for (i=1; i<=length(this.estnames); i++) {
+			printf("{result} %s, ", this.estnames[i])
+		}
+		printf("\n")
 		printf("{txt}baselevels is:{result} %f\n", this.baselevels)
 		printf("{txt}bfmt is:{result} %s\n", this.bfmt)
 		printf("{txt}ci is:{result} %s\n", this.ci)
 		printf("{txt}eform is:{result} %f\n", this.eform)
 		printf("{txt}fname is:{result} %s\n", this.fname)
-		printf("{txt}___________________________________________________________\n")
+		printf("{txt}nopval is:{result} %f\n", this.nopval)
+		printf("{txt}star is:")
+		for (i=1; i<=length(this.star); i++) {
+			printf("{result} %f, ", this.star[i])
+		}
+		printf("\n")
+		
+		printf("{txt}---------------------------------------------------------------------------\n")
+		"estnames" 
+		this.estnames
+		"levels"
+		this.levels
+	
+		printf("{txt}{hline 80}\n")
+		printf("{txt}------------------ END OBJECT ESTDOCXTABLE: -------------------------------\n")
+		printf("{txt}{hline 80}\n")
 		
 	}
 
@@ -1028,7 +1051,7 @@ void create_frame_table(`SS' estnames,
 		                `SS' bfmt,
 		                `SS' ci,
 		                `SS' star,
-		                `SS' Nop,
+		                `SS' nopval,
 		                `SS' eform,
 						`SS' fname,
 					    `SS' keep
@@ -1036,7 +1059,7 @@ void create_frame_table(`SS' estnames,
 	//declare function objects, structures and variables						
 	class estdocxtable scalar table
 	
-	print_opts(estnames, keep, bfmt, ci, star, baselevels, Nop, eform, fname)
+	print_opts(estnames, keep, bfmt, ci, star, baselevels, nopval, eform, fname)
 	
 	// set set all table propreties to default values values
 
@@ -1046,7 +1069,7 @@ void create_frame_table(`SS' estnames,
 		        bfmt,
 		        ci,
 		        star,
-		        Nop,
+		        nopval,
 		        eform,
 				fname,
 				keep)
@@ -1073,7 +1096,7 @@ void print_opts(`SS' estnames,
 		        `SS' ci,
 		        `SS' star,
 		        `SS' baselevels,
-		        `SS' Nop,
+		        `SS' nopval,
 		        `SS' eform,
 				`SS' fname
 		        ) {
@@ -1085,7 +1108,7 @@ void print_opts(`SS' estnames,
 	printf("{txt}ci is:{result} %s\n", ci)
 	printf("{txt}star is:{result} %s\n", star)
 	printf("{txt}baselevels is:{result} %s\n", baselevels)
-	printf("{txt}Nop is:{result} %s\n", Nop)
+	printf("{txt}nopval is:{result} %s\n", nopval)
 	printf("{txt}eform is:{result} %s\n", eform)
 	printf("{txt}fname is:{result} %s\n", fname)
 	printf("{txt}__________________________________________________\n")
