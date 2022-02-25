@@ -478,6 +478,7 @@ class model {
 		`RS'             get_ul()           // returns upper bound of ci as real for a given level
 		`boolean' scalar get_base()         // returns boolean==TRUE if level is a base
 		`boolean' scalar get_intr()         // returns boolean==TRUE if level is a base
+		`boolean' scalar get_eform()        // returns boolean==TRUE if level is in eform
 		
 	private:
 	    // private vars
@@ -533,7 +534,7 @@ class model {
 	/***************************************************************************
 	Function returns boolean TRUE if supplied level is a baselevel
 	****************************************************************************/
-	`RS' model::get_base(`SS' level) {
+	`boolean' scalar model::get_base(`SS' level) {
 		`RS' i
 		
 		i= selectindex(regexm(this.levels, "^" + level + "$"))
@@ -546,7 +547,7 @@ class model {
 	/***************************************************************************
 	Function returns boolean TRUE if supplied level is an interaction
 	****************************************************************************/
-	`RS' model::get_intr(`SS' level) {
+	`boolean' scalar model::get_intr(`SS' level) {
 		`RS' i
 		
 		i= selectindex(regexm(this.levels, "^" + level + "$"))
@@ -555,6 +556,12 @@ class model {
 
 		if(orgtype(i) == "scalar") return(this.interactions[i])
 		else return(`FALSE')
+	}
+	/***************************************************************************
+	Function returns boolean TRUE if supplied level is in eform
+	****************************************************************************/
+	`boolean' scalar model::get_eform(`SS' level) {
+		return(this.rtable.get(("eform", level)))
 	}
 	/***************************************************************************
 	Function returns beta-value for supplied level
@@ -805,7 +812,7 @@ class estdocxtable {
 	if(baselevels_txt=="baselevels") this.baselevels= `TRUE'
 	else this.baselevels= `FALSE'
 	
-	//eform
+	//set option eform
 	if(eform_txt=="eform") this.eform= `TRUE'
 	else this.eform= `FALSE'
 	
@@ -952,10 +959,20 @@ class estdocxtable {
 	****************************************************************************/
 	`SS' estdocxtable::get_beta(class model scalar mod, `SS' level) {
 		string scalar beta
+
 		
-		if(mod.get_base(level))	beta= "(base)"
-		else beta= sprintf(this.bfmt, mod.get_beta(level))
-		
+		if(mod.get_base(level))	{
+			beta= "(base)"
+		}
+		else if(!this.eform){
+			beta= sprintf(this.bfmt, mod.get_beta(level))
+		}
+		else {
+			
+			if(!mod.get_eform(level)) beta= sprintf(this.bfmt, exp(mod.get_beta(level)))
+			else beta= sprintf(this.bfmt, mod.get_beta(level))
+			
+		}
 		return(beta)
 		
 	}
