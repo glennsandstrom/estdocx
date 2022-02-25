@@ -761,7 +761,7 @@ class estdocxtable {
 		void   set_ulevels()                // computes the uniq ordered list of levels that form the rows of table
 		void   create_display()
 		`SS'   get_beta()
-		//`SS'   get_pvalue()
+		`SS'   get_pvalue()
 		`SS'   get_ci()
 		
 }
@@ -800,6 +800,7 @@ class estdocxtable {
 	if(baselevels_txt=="baselevels") this.baselevels= `TRUE'
 	else this.baselevels= `FALSE'
 	
+	//eform
 	if(eform_txt=="eform") this.eform= `TRUE'
 	else this.eform= `FALSE'
 	
@@ -901,7 +902,7 @@ class estdocxtable {
 		
 		// add columns for for each model
 		for (i=1; i<=length(this.estnames); i++) {
-			varindex= st_addvar("str20", this.estnames[i])
+			varindex= st_addvar("str25", this.estnames[i])
 		}
 				
 		
@@ -927,12 +928,12 @@ class estdocxtable {
 				
 				// if ci is TRUE add/get CI, that it is valied fmt is confirmed in main ado
 				if(this.ci!="") paramtext= paramtext + this.get_ci(this.models[ii], this.levels[i])
-				/*
+			
 				
 				//add/get p-value
-				pvalue= this.get_pvalue(this.estnames[ii], this.parameters[i])
+				pvalue= this.get_pvalue(this.models[ii], this.levels[i])
 				paramtext= paramtext + pvalue
-				*/
+			
 				// write full parameter text to cell in display frame
 				table[i,c]= paramtext
 				
@@ -942,7 +943,6 @@ class estdocxtable {
 		
 
 	}
-
 	/***************************************************************************
 	Function returns formated beta-value string for model, param 
 	****************************************************************************/
@@ -973,15 +973,14 @@ class estdocxtable {
 		return(ci)
 		
 	}
-	/*
 	/***************************************************************************
 	Function returns formated p-value string for model, param 
 	****************************************************************************/
-	`SS' estdocxtable::get_pvalue(`SS' model, `SS' param) {
+	`SS' estdocxtable::get_pvalue(class model scalar mod, `SS' level) {
 		string scalar pvalue
 		real scalar p, i
 		
-		p= this.rtables.get((model, "pvalue", param))
+		p= mod.get_pvalue(level)
 		
 		if(length(this.star)) {
 			//add stars according to cutoffs
@@ -1001,7 +1000,6 @@ class estdocxtable {
 		return(pvalue)
 		
 	}
-	*/
 	/***************************************************************************
 	Function displays table of object propreties
 	****************************************************************************/
