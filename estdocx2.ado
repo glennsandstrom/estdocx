@@ -601,6 +601,7 @@ class model {
 			// remove contionious chanter in intercations
 			while(regexm(param, "[c]+\.")) param= regexr(param, "[c]+\.", "")
 			
+			
 			this.levels[r]=param
 		}
 			
@@ -714,9 +715,6 @@ class model {
 		
 		printf("{txt}estname is:{result} %s\n", this.estname)
 		printf("{txt}___________________________________________________________\n")
-		"parameters, levels, interactions, base, omitted, constfree"
-
-		printf("{txt}___________________________________________________________\n")
 		
 	}	
 /*#######################################################################################*/
@@ -728,7 +726,8 @@ class estdocxtable {
 		//public vars
 		class     model colvector models
 		string    colvector levels                // uniq ordered list of pramameters
-		string    scalar    varnames              // uniq ordered list of varnames
+		string    colvector terms                 // colvector with unique set of terms in all models
+		string    colvector keep                  // terms to keep in the table and their ordering
 		string    scalar    fname                 // framename used to store the table
 		string    scalar    bfmt                  // %fmt for beta
 		string    scalar    ci                    // %fmt for confidence interval
@@ -749,7 +748,9 @@ class estdocxtable {
 		string vector estnames              // vector of the name of estimates
 		
 		//private functions
-		void   set_ulevels()                // computes the uniq ordered list of levels that form the rows of table
+		void   set_ulevels()             // computes the uniq ordered list of levels that form the rows of table
+		void   set_terms()               // computes the uniq ordered list of terms
+		void   set_keep()                // computes the uniq ordered list of levels that form the rows of table
 		void   create_display()
 		`SS'   get_beta()
 		`SS'   get_pvalue()
@@ -770,7 +771,6 @@ class estdocxtable {
 					         `SS' keep_txt
 						   ) {
 		real scalar i
-		string colvector allparams
 
 		// convert string scalar to string vector of estnames
 		estnames= tokens(estnames_txt)
@@ -803,12 +803,14 @@ class estdocxtable {
 	
 	if(ci_txt!="") this.ci= ci_txt
 	
-	
-
 	this.set_ulevels()
+	this.set_terms()
 		
-				
-				
+	// convert string scalar to string vector of estnames
+	if(keep_txt!="") {
+		this.keep= tokens(keep_txt)				
+		this.set_keep()
+		}
 	}
 	/***************************************************************************
 	Function takes a vector of model objects models and returns the unique
@@ -819,12 +821,10 @@ class estdocxtable {
 	string colvector constants
 	real scalar i, ii
 	string scalar level
-	
-	
+		
 		//declare colvector constants
 		constants= J(0, 1, "")
 		
-
 		for (i=1; i<=length(this.models); i++) {
 		
 			for (ii=1; ii<=length(this.models[i].levels); ii++) {
@@ -848,16 +848,75 @@ class estdocxtable {
 				else if(this.baselevels==`TRUE') { 
 					if(!anyof(this.levels, level)) this.levels= this.levels\level
 				}
-			
 			}
-		
-			
 		}
-	
 		
 		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
 		this.levels= this.levels\constants
+		
+		// if keep is passed limit and order this.levels according to the supplied list of levels\constants
+		if(length(this.keep)) this.set_keep()
+		
+	}
+	/***************************************************************************
+	Function takes a vector of model objects models and returns the unique
+	list of levels with all duplicates removed => function as the rows
+	of the regression table
+	****************************************************************************/
+	/***************************************************************************
+	Function sets the string vector levels contining pramters with base/omitted stripped
+	****************************************************************************/
+	void estdocxtable::set_terms() {
+		real scalar r
+		string scalar term
+		
+		this.terms= J(length(this.levels), 1, "")
+		
+		for (r=1; r<=length(this.levels); r++) {
+			term= this.levels[r]
+			// remove factor, base, omitted and continious charathers
+			while(regexm(term, "[0-9boc]+\.")) term= regexr(term, "[0-9boc]+\.", ".")
+			term= subinstr(term, ".", "")
+			this.terms[r]= term
+		}
+			
+		
+	}
+	/***************************************************************************
+	Function limits the set of levels displayed in the table
+	****************************************************************************/
+	void estdocxtable::set_keep() {
+		`RS' i, ii
+		`SCV' keeplevels
+		real colvector add
+		`SS' term
+		
+			//check that all all terms in keep exists in models
+			for (i=1; i<=length(this.keep); i++) {
+				
+				if(!anyof(this.terms, this.keep[i])) {
+					printf("{error}ERROR: The term {txt}%s{error} is incorrectly specified or does not exist in any of the models{txt}\n", this.keep[i])
+					exit(error(193))
+				}
+			}
+		
+		
+		//declare colvector this_unique => limited and ordered version of coiffcents returned
+		keeplevels= J(0, 1, "")
+	
+		//loop over terms to be keept
+		for (i=1; i<=length(this.keep); i++) {
+		
+			add= J(0, 1, .)
+			for (ii=1; ii<=length(this.terms); ii++) {
+				if(this.terms[ii]==this.keep[i]) add= add\ii
+				
+			}
+			
+		keeplevels	= keeplevels\this.levels[(add)]
+		}
 
+		this.levels= keeplevels
 		
 	}
 	/***************************************************************************
@@ -1034,6 +1093,8 @@ class estdocxtable {
 		this.estnames
 		"levels"
 		this.levels
+		"terms"
+		this.terms
 	
 		printf("{txt}{hline 80}\n")
 		printf("{txt}------------------ END OBJECT ESTDOCXTABLE: -------------------------------\n")
