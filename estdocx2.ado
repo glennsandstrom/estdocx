@@ -1,12 +1,6 @@
 /**************************************************************************/
 /**TODO  **/
 /**************************************************************************/
-// * DONE:Implement a keep(coeflist) option and report coefficients in order specified
-// 
-// * DONE: Implement possibility to report 95%CI rather than p-values or both....
-// 
-// * DONE: Implement an inline-mode that inserts table in document in memory rather than saves to a file
-//
 // * Format stats N with tousand number separator i.e. 1,000,000
 //
 // * PARTIALLY: Implement eform option to transform non exponatisated coefficients...
@@ -17,33 +11,22 @@
 //   variances, covariances, and the like that are part of the model being fit"
 //   
 //   These should be handled differntly removed from the matrix of parameters and placed 
-//   in the stats matrix and handled separatly printed under each model. Asi the program work now
-//   it print also the free paramters in eform wich is an error.
+//   in the stats matrix and handled separatly printed under each model. Currenlty free paramters
+//   are reported in eform wich is an error.
 //
 //
 // * BUG:if a variable has no valuelables program ends in Error st_vlmap():  3300  argument out of range
+
 // * BUG: if factor has more than single digit level program throws error
-//   for some reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
-//   Temporarly I comment this out but need to figure out why i did this in the first place
-//
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
-//
-// * Implement higher order interactions than 2-way.... Simplify the functions paramtype
-//   Only needs to return factor, factor-interaction (includes factor#continious), 
-//   continious (includes constants, continious-interactions)
-//	 Goal is to simplifiy the forming of rowlabels for differnt types of interacations
-//   and to handle situations when there are either no label or no value-labels
-//   assossiated to one or more variables/levels in the paramteter that forms the row of the table
 //
 // * Handle stratified variables in cox-regressions
 // 
 // * Implement option to set the titles of models
 //
 // * Implement a possibility to include a note below the regression table e.g. source comment etc.
-//
-// 
 /*###############################################################################################*/
 /**SUB-ROUTINES  **/
 /*###############################################################################################*/
