@@ -3,9 +3,12 @@
 /**************************************************************************/
 // * Format stats N with tousand number separator i.e. 1,000,000
 //
-// * PARTIALLY: Implement eform option to transform non exponatisated coefficients...
-//   fixed but does not handle multiple equation models such as'
-//   xtlogit with ancilliary paramters that should not be transformed. Program needs to honor the 
+// * eform: Implement eform option to transform non exponatisated coefficients...and show ln(coef)
+//   of eform prameters if eform is not passed.
+//
+// * free-parameters:
+//   Program does not handle multiple equation models such as'
+//   xtlogit with ancilliary/free paramters that should not be transformed. Program needs to honor the 
 //   equation name where free paramters have a different equation name, In r(table) all params 
 //   after / in the equation name are free paramters "Free parameters are scalar parameters, 
 //   variances, covariances, and the like that are part of the model being fit"
