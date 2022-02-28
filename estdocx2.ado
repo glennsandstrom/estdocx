@@ -51,6 +51,68 @@
 		}
 	end
 	/*########################################################################*/
+	program create_docx
+		version 15.1
+		syntax , pagesize(string) [landscape]
+	
+		/**************************************************************************/
+		/** CREATE THE WORDDOCUMENT THAT WILL HOLD THE TABLE                     **/
+		/**************************************************************************/
+			// clear any unsaved documents from memory
+			putdocx clear
+			if "`landscape'"!="" putdocx begin, pagesize(`pagesize') landscape
+			else putdocx begin, pagesize(`pagesize')
+			
+	end
+	/*########################################################################*/
+	program create_table
+		version 15.1
+		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
+		
+		/**************************************************************************/
+		/** SET WIDTH OF THE TABLE                     **/
+		/**************************************************************************/
+		local nummodels :list sizeof models
+		// set the width of the table= nummodels + one rowheader column to display variable
+		// names and factor levels in case var is a factor
+		local COLUMNS= `nummodels' +1
+		
+		// try to insert a pragraph
+		capture putdocx paragraph, halign(left) spacing(after, 0) 
+		if _rc!=0 {
+				display as error "No active document in memory. "
+				display as error "If you are using the option inline "
+				display as error "you first have to run the command putdocx begin "
+				display as error "before calling estdocx"
+				exit _rc
+		}
+			
+		//print title of table it there is one
+		if ("`title'"!="") putdocx text ("`title'"), bold
+
+		/**************************************************************************/
+		/** CREATE THE HEADER ROW TABLE USING `ROWS',`COLUMNS' DIMENSIONS        **/
+		/**************************************************************************/
+
+			putdocx table esttable = (1,`COLUMNS'), ///
+			border(start, nil) ///
+			border(insideH, nil) ///
+			border(insideV, nil) ///
+			border(end, nil) ///
+			halign(left) layout(autofitcontents)
+			
+		
+			//set column lable for x-variables
+			putdocx table esttable(1,1) = ("Variables"), bold font(Garamond, 11) halign(left) 
+			
+			
+			forvalues col=2/`COLUMNS' {
+				local mod= `col'-1
+				local model: word `mod' of `models'
+				putdocx table esttable(1,`col') = ("`model'"),	bold font(Garamond, 11) halign(left)
+				
+			}
+	end
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
@@ -131,37 +193,33 @@ program estdocx
 	/**************************************************************************/
 	/** Call MATA to set up frame with the desired regression table **/
 	/**************************************************************************/
+	mata: create_frame_table("`estnames'",   ///
+							 "`baselevels'", ///
+							 "`bfmt'",       ///
+							 "`ci'",         /// 
+							 "`star'",       ///
+							 "`nopval'",     ///
+							 "`eform'",      ///
+							 "`fname'",      ///
+							  "`keep'")
 	
 
-
-		
-**# Bookmark #1
-
-		mata: create_frame_table("`estnames'",     ///
-								 "`baselevels'", ///
-								 "`bfmt'",       ///
-								 "`ci'",         /// 
-								 "`star'",       ///
-								 "`nopval'",       ///
-								 "`eform'",       ///
-								 "`fname'",       ///
-								  "`keep'"      ///
-								 )
-	
-/*
 	/**************************************************************************/
 	/** CREATE TABLE                     **/
 	/**************************************************************************/
 	// if !inline first create docx in memory to hold the table
 	if("`inline'"=="") create_docx , pagesize(`pagesize') `landscape'
 	
+	create_table `estnames', pagesize(`pagesize') title(`title') `landscape' 
+	//putdocx describe esttable
 	
+/*	
 	/**************************************************************************/
 	/** PRINT THE TABLE FROM FRAME */
 	/**************************************************************************/
 	
 //create worddoc 
-	putdocx clear
+
 	putdocx begin, pagesize(A4) 
 	putdocx paragraph, halign(left)
 	putdocx text ("Table 1: "), bold font(Garamond, 13)
@@ -202,6 +260,7 @@ putdocx save temp/estocx.docx, replace
 	/**************************************************************************/
 	qui putdocx describe esttable
 	if("`star'"!="none" & "`nopval'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
+*/	
 	/**************************************************************************/
 	/** Save worddocument if program is not in inline mode           **/
 	/**************************************************************************/
@@ -212,7 +271,7 @@ putdocx save temp/estocx.docx, replace
 	/** Garbage collection             **/
 	/**************************************************************************/
 	//matrix drop _all
-*/
+
 end
 
 version 17
