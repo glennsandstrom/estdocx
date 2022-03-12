@@ -112,6 +112,8 @@
 				putdocx table esttable(1,`col') = ("`model'"),	bold font(Garamond, 11) halign(left)
 				
 			}
+			
+			
 	end
 /*###############################################################################################*/
 // MAIN PROGRAM
@@ -210,47 +212,52 @@ program estdocx
 	// if !inline first create docx in memory to hold the table
 	if("`inline'"=="") create_docx , pagesize(`pagesize') `landscape'
 	
-	create_table `estnames', pagesize(`pagesize') title(`title') `landscape' 
-	//putdocx describe esttable
+		/**************************************************************************/
+		/** SET WIDTH OF THE TABLE                     **/
+		/**************************************************************************/
+		local nummodels :list sizeof estnames
+		// set the width of the table= nummodels + one rowheader column to display variable
+		// names and factor levels in case var is a factor
+		local totcols= `nummodels' +1
 	
-/*	
+	create_table `estnames', pagesize(`pagesize') title(`title') `landscape' 
+	putdocx describe esttable
+	
+	// set border on bottom of header row of table
+	putdocx table esttable(1,.), border(bottom)
+	
+	
 	/**************************************************************************/
 	/** PRINT THE TABLE FROM FRAME */
 	/**************************************************************************/
 	
-//create worddoc 
+//read table data from frame 
+local rows= _N // get teh total number of rows of table
+local rowtab= 1
 
-	putdocx begin, pagesize(A4) 
-	putdocx paragraph, halign(left)
-	putdocx text ("Table 1: "), bold font(Garamond, 13)
-	putdocx text ("Models" ), font(Garamond, 13) 
+// loop over rows in frame
+forvalues rowframe= 1(1)`rows' {
+	
+	putdocx table esttable(`rowtab',.), addrows(1, after) // add a row to the table
 
-	// create the header rows of the table 
-	putdocx table tab1 = (1, 4), ///
-	border(start, nil) ///
-	border(top, nil) ///
-	border(insideH, nil) ///
-	border(insideV, nil) ///
-	border(end, nil) ///
-	halign(left) layout(autofitcontents)
-	putdocx table tab1(1,1) = ("Variable"), bold font(Garamond, 11) halign(left)
-	putdocx table tab1(1,2) = ("Model 1"), bold font(Garamond, 11) halign(center)
-	putdocx table tab1(1,3) = ("Model 2"), bold font(Garamond, 11) halign(center)
-	putdocx table tab1(1,4) = ("Model 3"), bold font(Garamond, 11) halign(center)
+	// increment rowtab to index of added row
+	local ++rowtab
+	//set the row header
+	putdocx table esttable(`rowtab',1) = (params[`rowframe']), font(Garamond, 10) halign(center)
 	
-local rows= _N
-local rt= 1
-forvalues rd= 1(1)`rows' {
-	
-	putdocx table tab1(`rd',.), addrows(1, after) // add a row to the table
-	local ++rt
-	putdocx table tab1(`rt',1) = (params[`rd']), font(Garamond, 10) halign(center)
+	//loop over columns of frame and set cell values of table
+	forvalues col=2/`totcols' {
+				local estnum= `col'-1
+				local estname: word `estnum' of `estnames'
+				putdocx table esttable(`rowtab',`col') = (`estname'[`rowframe']),	bold font(Garamond, 10) halign(left)
+				
+			}
 
 }
 
-putdocx save temp/estocx.docx, replace
 
-	
+/*	
+
 	/**************************************************************************/	
 	// ADD STATS TO BOTTOM OF TABLE IF stats!=null
 	/**************************************************************************/
