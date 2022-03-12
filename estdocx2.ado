@@ -191,6 +191,10 @@ program estdocx
 	if ("`stats'"=="") local stats "N" // set default stat N if stats is not provided
 	if ("`stats'"=="none") local stats "" // set stat null string if stat(none)
 	
+	//find out the name of the current frame used to search for labels and vlables
+	frame pwf
+	local datafr= r(currentframe)
+	
 
 	/**************************************************************************/
 	/** Call MATA to set up frame with the desired regression table **/
@@ -242,8 +246,16 @@ forvalues rowframe= 1(1)`rows' {
 
 	// increment rowtab to index of added row
 	local ++rowtab
+	
+	
+	local param= params[`rowframe']
+	
+	frames change `datafr'
+	mata: paramtype("`param'") //returns locals: paramtype, label, vlab
+	frames change `tabfr'
+/**/
 	//set the row header
-	putdocx table esttable(`rowtab',1) = (params[`rowframe']), font(Garamond, 10) halign(center)
+	putdocx table esttable(`rowtab',1) = ("`label'"), font(Garamond, 10) halign(center)
 	
 	//loop over columns of frame and set cell values of table
 	forvalues col=2/`totcols' {
@@ -1204,21 +1216,25 @@ void create_frame_table(`SS' estnames,
 				fname,
 				keep)
 
-	
-	
-	
-	
-	
-	
-	
-	
 	table.create_display_frame(fname)
 
-	table.print()
+	//table.print()
 	
 	
 }
+/*###############################################################################################*/
 
+/*###############################################################################################*/
+void paramtype(string scalar param) {
+	class parameter scalar P
+	
+	P.setup(param)
+	st_local("paramtype", P.paramtype)
+	st_local("vlab", P.combvlab)
+	st_local("label", P.comblabel)
+
+
+}
 /*###############################################################################################*/
 void print_opts(`SS' estnames,
               | `SS' keep,
