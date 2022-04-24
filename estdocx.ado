@@ -1,56 +1,59 @@
 /**************************************************************************/
 /**TODO  **/
 /**************************************************************************/
-// * DONE:Implement a keep(coeflist) option and report coefficients in order specified
-// 
-// * DONE: Implement possibility to report 95%CI rather than p-values or both....
-// 
-// * DONE: Implement an inline-mode that inserts table in document in memory rather than saves to a file
-//
 // * Format stats N with tousand number separator i.e. 1,000,000
 //
-// * PARTIALLY: Implement eform option to transform non exponatisated coefficients...
-//   fixed but does not handle multiple equation models such as'
-//   xtlogit with ancilliary paramters that should not be transformed. Program needs to honor the 
+// * eform: Implement eform option to transform non exponatisated coefficients...and show ln(coef)
+//   of eform prameters if eform is not passed.
+//
+// * free-parameters:
+//   Program does not handle multiple equation models such as'
+//   xtlogit with ancilliary/free paramters that should not be transformed. Program needs to honor the 
 //   equation name where free paramters have a different equation name, In r(table) all params 
 //   after / in the equation name are free paramters "Free parameters are scalar parameters, 
 //   variances, covariances, and the like that are part of the model being fit"
 //   
 //   These should be handled differntly removed from the matrix of parameters and placed 
-//   in the stats matrix and handled separatly printed under each model. Asi the program work now
-//   it print also the free paramters in eform wich is an error.
+//   in the stats matrix and handled separatly printed under each model. Currenlty free paramters
+//   are reported in eform wich is an error.
 //
 //
 // * BUG:if a variable has no valuelables program ends in Error st_vlmap():  3300  argument out of range
+
 // * BUG: if factor has more than single digit level program throws error
-//   for some reason I have introduced a catch that throws arguemnt out of range in mata-function param-type
-//   Temporarly I comment this out but need to figure out why i did this in the first place
-//
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
-//
-// * Implement higher order interactions than 2-way.... Simplify the functions paramtype
-//   Only needs to return factor, factor-interaction (includes factor#continious), 
-//   continious (includes constants, continious-interactions)
-//	 Goal is to simplifiy the forming of rowlabels for differnt types of interacations
-//   and to handle situations when there are either no label or no value-labels
-//   assossiated to one or more variables/levels in the paramteter that forms the row of the table
 //
 // * Handle stratified variables in cox-regressions
 // 
 // * Implement option to set the titles of models
 //
 // * Implement a possibility to include a note below the regression table e.g. source comment etc.
-//
-// 
-/**************************************************************************/
+/*###############################################################################################*/
 /**SUB-ROUTINES  **/
-/**************************************************************************/
+/*###############################################################################################*/
+	/*########################################################################*/
+	program check_stats
+		version 17
+		syntax anything(name=statlist id="Statistics"), allowed(string)
+		
+		foreach stat in `statlist' {
+			// get postion of stat in list of allowed statistics
+			local i : list posof "`stat'" in allowed
+			if(!`i') {
+				di _newline(3)  
+				di as error "ERROR: `stat' is not an allowed statistic in option stats()"
+				di _newline  
+				error 197
+			
+			}
+		}
+	end
 	/*########################################################################*/
 	program create_docx
-		version 15.1
-		syntax [namelist(name=models)], pagesize(string) [landscape]
+		version 17
+		syntax , pagesize(string) [landscape]
 	
 		/**************************************************************************/
 		/** CREATE THE WORDDOCUMENT THAT WILL HOLD THE TABLE                     **/
@@ -63,7 +66,7 @@
 	end
 	/*########################################################################*/
 	program create_table
-		version 15.1
+		version 17
 		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
 		
 		/**************************************************************************/
@@ -83,7 +86,6 @@
 				display as error "before calling estdocx"
 				exit _rc
 		}
-			
 			
 		//print title of table it there is one
 		if ("`title'"!="") putdocx text ("`title'"), bold
@@ -110,182 +112,10 @@
 				putdocx table esttable(1,`col') = ("`model'"),	bold font(Garamond, 11) halign(left)
 				
 			}
+			
+			
 	end
 	/*########################################################################*/
-	program get_models, rclass
-	version 15.1
-	  
-		syntax namelist(min=1),	///
-		[keep(string)]
-		
-		local models= "`namelist'" //space sparated list of estimates
-			
-		//loop over models to create table model_betas & model_p
-		foreach model in `models' {
-		// create a matrix named model for each stored estimate that can then be combined
-		// by mata to th the matrices model_betas, model_p model_eform
-				
-			if _rc==111 {
-				di _newline(3)  
-				di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
-				di _newline  
-				di as result "The estimates currently stored in memory are:" 
-				estimates dir
-				exit _rc
-			}
-			
-			//get stored estimates for model Y Y Z
-			capture qui estimates replay `model'
-			mat `model'= r(table)
-			
-			//transpose to get variables as rows
-			mat `model'= `model''
-			
-			//remove the equation-name
-			matrix roweq `model' = ""
-			
-		}
-		
-		// set macro modelvars defiening the rowvarlist that makes up 
-		// the rows of the table
-		if("`keep'"=="") mata: models_varlist("`models'")
-		else mata: models_varlist("`models'", "`keep'")
-		
-		// call mata to form the matrix with model parameters
-		mata: models_param_table("`models'", "`modelvars'")
-		
-		di "`modelvars'"
-		
-		return local params "`modelvars'"
-		return scalar numparams= `numparams'
-		return matrix model_betas= model_betas
-		return matrix model_p= model_p
-		return matrix model_ll= model_ll
-		return matrix model_ul= model_ul
-		return matrix model_eform= eform
-		
-	end
-	/*########################################################################*/
-	program write_continious
-		version 15.1
-		syntax namelist(min=1), ///
-		row(integer) ///
-		var(string) ///
-		varlabel(string) ///
-		bfmt(string) ///
-		star(string) ///
-		[ci(string)] ///
-		[eform] ///
-		[Nop]
-		
-		
-		local models= "`namelist'" //space sparated list of estimates
-		
-		mat B= r(model_betas)
-		mat P= r(model_p)
-		mat E= r(model_eform)
-		mat LL= r(model_ll)
-		mat UL= r(model_ul)
-		
-		// add row for _cons to table
-		putdocx table esttable(`row',.), addrows(1)
-		local row= `row'+1
-		putdocx table esttable(`row',1) = ("`varlabel'"), bold font(Garamond, 11) halign(left)
-		
-		
-		//loop over models and write parameter for all models
-		local col=2
-		foreach model of local models {
-				// get beta and check if it should be transformed
-				//check if parameters should be transformed to eform and if they are untransformed print exp(B)
-				if ("`eform'"!="") & !(E[rownumb(E,"`var'") ,colnumb(E,"`model'")]) {
-					
-					local b= exp(B[rownumb(B,"`var'") ,colnumb(B,"`model'")])
-					// get CIs
-					local ll= exp(LL[rownumb(LL,"`var'") ,colnumb(LL,"`model'")])
-					local ul= exp(UL[rownumb(UL,"`var'") ,colnumb(UL,"`model'")])
-				}
-				else {
-					local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
-					// get CIs
-					local ll= LL[rownumb(LL,"`var'") ,colnumb(LL,"`model'")]
-					local ul= UL[rownumb(UL,"`var'") ,colnumb(UL,"`model'")]
-				}
-				
-				// get significance
-				local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
-				
-				
-				
-				// returns local param => string with paramter, sig, CI depending on options passed
-				mata: get_param(`b', "`bfmt'", `p', "`star'", "`nop'", "`ci'", `ll', `ul') 
-			
-				putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left) 
-				local ++col
-		}
-			
-	end
-	/*########################################################################*/	
-	program write_level
-		version 15.1
-		syntax namelist(min=1), ///
-		row(integer) ///
-		var(string) ///
-		vlab(string) ///
-		bfmt(string) ///
-		star(string) ///
-		[ci(string)] ///
-		[eform] ///
-		[Nop]
-			
-		local models= "`namelist'" //space sparated list of estimates
-		
-		mat B= r(model_betas)
-		mat P= r(model_p)
-		mat E= r(model_eform)
-		mat LL= r(model_ll)
-		mat UL= r(model_ul)
-		
-		// add row for factor level to table
-		putdocx table esttable(`row',.), addrows(1)
-		local row= `row'+1
-		
-		// print level header in first column
-		putdocx table esttable(`row',1) = ("`vlab'"), ///
-		italic font(Garamond, 10) halign(center)
-		
-		//loop over models and write paramters
-		local col=2
-		foreach model of local models {
-				// get beta and check if it should be transformed
-				//check if parameters should be transformed to eform and if they are untransformed print exp(B)
-				if ("`eform'"!="") & !(E[rownumb(E,"`var'") ,colnumb(E,"`model'")]) {
-					
-					local b= exp(B[rownumb(B,"`var'") ,colnumb(B,"`model'")])
-					// get CIs
-					local ll= exp(LL[rownumb(LL,"`var'") ,colnumb(LL,"`model'")])
-					local ul= exp(UL[rownumb(UL,"`var'") ,colnumb(UL,"`model'")])
-				}
-				else {
-					local b= B[rownumb(B,"`var'") ,colnumb(B,"`model'")]
-					// get CIs
-					local ll= LL[rownumb(LL,"`var'") ,colnumb(LL,"`model'")]
-					local ul= UL[rownumb(UL,"`var'") ,colnumb(UL,"`model'")]
-				}
-				
-				// get significance
-				local p= P[rownumb(P,"`var'") ,colnumb(P,"`model'")]
-				
-				
-				
-				// returns local param => string with paramter, sig, CI depending on options passed
-				mata: get_param(`b', "`bfmt'", `p', "`star'", "`nop'", "`ci'", `ll', `ul') 
-				
-				putdocx table esttable(`row',`col') = ("`param'"), font(Garamond, 11) halign(left)
-				local ++col
-		}	
-	end
-	/*########################################################################*/	
 	program write_legend
 		version 15.1
 		syntax, star(string) row(integer) col(integer)
@@ -306,7 +136,7 @@
 		border(bottom, nil) ///
 		border(top)
 	end
-	/*########################################################################*/	
+/*########################################################################*/	
 	program write_stats
 		version 15.1
 		syntax namelist(min=1), stats(string) row(integer)
@@ -329,13 +159,13 @@
 			
 			foreach mod in `models' {
 				if ("`stat'"!="N") {
-					local text: display %-9.1f S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+					local text: display %-12.1f S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
 					local text= subinstr("`text'"," ","", .)
 				}
 				else {
-					local text= S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+					local text: display %-12.0gc  S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
 				}
-				putdocx table esttable(`row',`col') = ("`text'"), font(Garamond, 11) halign(left)				
+				putdocx table esttable(`row',`col') = ("`text'"), font(Garamond, 11) halign(left)			
 				local ++col
 			}
 		}		
@@ -416,33 +246,17 @@
 		return matrix S= Y
 	end
 	/*########################################################################*/
-	program check_stats
-		version 15.1
-		syntax anything(name=statlist id="Statistics"), allowed(string)
-		
-		foreach stat in `statlist' {
-			// get postion of stat in list of allowed statistics
-			local i : list posof "`stat'" in allowed
-			if(!`i') {
-				di _newline(3)  
-				di as error "ERROR: `stat' is not an allowed statistic in option stats()"
-				di _newline  
-				error 197
-			
-			}
-		}
-	end
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
-program estdocx
-	version 15.1
+program estdocx, rclass
+	version 17
   
 	syntax namelist(min=1),	///
 		[saving(string)] ///
 		[inline] ///
 		[title(string)] ///
-		[b(string)] ///
+		[bfmt(string)] ///
 		[ci(string)] ///
 		[star(string)] ///
 		[stats(string)] ///
@@ -450,25 +264,57 @@ program estdocx
 		[keep(string)] ///
 		[pagesize(string)] ///
 		[landscape] ///
-		[Nop] ///
-		[eform]
-		
+		[NOPval] ///
+		[eform] ///
+		[fname(string)] 
 		
 		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is off
 		
+    di "star_ `star'"
 
-// di "main: nop: `nop'"
-// di "main: eform: `eform'"
 	// set local holding the names of estimates to be reported in table
-	local models= "`namelist'" //space separated list of estimates
+	local estnames= "`namelist'" //space separated list of estimates
+	//loop over estnames to and check that they are valid estimation result names avalaible in memory
+
+	qui estimates dir
+	local estimates= r(names)
+	foreach model in `estnames' {
+		if(!strmatch("`estimates'", "*`model'*")) {
+		di _newline(3)  
+		di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
+		di _newline  
+		di as result "The estimates currently stored in memory are:" 
+		exit _rc
+		}
+			
+	}
 	
 	// set local holding list of allowed statistics
 	local allowed "none N aic bic"
 	
 	// default values for options if none are provided
-	if ("`star'"=="") local star "none" // default is to report numerical p-value in pertenthesis
-	if ("`b'"=="") local b "%04.2f"
-	if ("`saving'"=="") local saving "estimates_table.docx"
+	if ("`bfmt'"=="") {
+		local bfmt "%04.2f"
+	} 
+	else {
+		capture confirm numeric format `bfmt'
+		if(_rc!=0) {
+			di as error "The value provided in option bfmt(`bfmt') is not a valid Stata format"
+			exit _rc
+			}
+	}
+	
+
+	if ("`ci'"!="") {
+		capture confirm numeric format `ci'
+		if(_rc!=0) {
+			di as error "The value provided in option ci(`ci') is not a valid Stata format"
+			exit _rc
+			}
+	}
+	
+	
+	if ("`saving'"=="") local saving "estdocx.docx"
 	if ("`pagesize'"=="") local pagesize "A4"
 	
 	// if stats is provided check that all stats are allowed/implemented
@@ -476,105 +322,132 @@ program estdocx
 	if ("`stats'"=="") local stats "N" // set default stat N if stats is not provided
 	if ("`stats'"=="none") local stats "" // set stat null string if stat(none)
 	
+	//find out the name of the current frame used to search for labels and vlables
+
+	qui frame pwf
+	local datafr= r(currentframe)
+	
+
 	/**************************************************************************/
-	/** CREATE TABLE                     **/
+	/** Call MATA to set up frame with the desired regression table **/
+	/**************************************************************************/
+	mata: create_frame_table("`estnames'",   ///
+							 "`baselevels'", ///
+							 "`bfmt'",       ///
+							 "`ci'",         /// 
+							 "`star'",       ///
+							 "`nopval'",     ///
+							 "`eform'",      ///
+							 "`fname'",      ///
+							  "`keep'")
+	
+	
+	//find out the name of the frame holding the regression table
+	//after the mata routines the active frame will be the one holding the regression table
+	qui frame pwf
+	local tabfr= r(currentframe)
+	
+	/**************************************************************************/
+	/** CREATE WORDTABLE                     **/
 	/**************************************************************************/
 	// if !inline first create docx in memory to hold the table
 	if("`inline'"=="") create_docx , pagesize(`pagesize') `landscape'
-	// then create the table in the document currenlty in memory
-	create_table `models', pagesize(`pagesize') title(`title') `landscape' 
-	//putdocx describe esttable
-	/**************************************************************************/
-	/** Get unique varlist from estimates for each of the specified models **/
-	/**************************************************************************/
-	if("`keep'"=="") get_models `models'
-	else get_models `models', keep(`keep')
-	// returns 
-	// 1. r(params)= MACRO STRING nicley formated list of unique paramters making 
-	//    up rows in the returned matrix 
-	// 2. r(numparams)= SCALAR Number of paramters
-	// 3. r(model_betas) MATRIX beta of all models
-	// 4. r(model_p) MATRIX pvalues of all models
-	// 5. r(model_ll) MATRIX lower CI of all models
-	// 6. r(model_ul) MATRIX upper CI of all models
-	// 7. r(model_eform) MATRIX of bolean values indicating if parameter is in eform or not
-	/**************************************************************************/
-	/** PRINT ALL THE UNIQUE VARIABLES OCCURING IN THE MODELS AND THEIR LEVELS*/
-	/**************************************************************************/
-	local row= 1
-	local betarow= 1
-	local rows: rowsof r(model_betas) // rows of full table
-	// Here I fetch the full rowvarlist for the complete table ex.
-	// 1bn.race 2.race 3.race age 0bn.collgrad 1.collgrad that I loop over
-	// and print each paramter/row of the full table
-	local varlist: rowvarlist r(model_betas)
 	
-	foreach var in `varlist' {
-			
-		/**************************************************************************/	
-		// Check the type of the parameter 1. CONTINIOUS/CONS 2. FACTOR 3.INTERACTION 
 		/**************************************************************************/
-		// get the type of paramter and the full label and value label to print
-		// in the row, differntiate between base levels and parmaters that are not 1|0
-		mata: paramtype("`var'") //returns locals: paramtype, label, vlab
-// 		di "var= `var'"
-// 		di "paramtype= `paramtype'"
-// 		di "label= `label'"
-// 		di "vlab= `vlab'"
-		// print paratmters that are facors or intercations including factors that have 
-		// more than one level
-		if "`paramtype'"=="factor" | "`paramtype'"=="factor-interaction"{
-			// Always print if base==FALSE and only print if baselevels== TRUE if base==TRUE
-			if !baselevels[`betarow', 1] | "`baselevels'"!="" {
-				//check if varname is in the list of printed varnames
-				local lab= subinstr("`label'", " ", "", .) //remove all whitespace
-				
-				local print : list posof "`lab'" in printed
-				//add a header row with variable label for factor variables that has been added to the table
-				if !`print' {
-					// add header row with varname of factor variable
-					putdocx table esttable(`row',.), addrows(1)
-					local ++row
-					putdocx table esttable(`row',1) = ("`label'"), bold font(Garamond, 11) halign(left)
-					local printed "`printed' `lab'" //add varname to list of printed headers
-				}
-				
-				// print row with factor parameters 
-				write_level `models', row(`row') var(`var') vlab(`vlab') bfmt(`b') star("`star'") ci("`ci'") `eform' `nop'
-				local ++row
-			}
-		}
-		// here paramtype should return continious
-		else if "`paramtype'"=="continious" | "`paramtype'"=="continious-interaction" | "`paramtype'"=="const" {
-		
-			write_continious `models', row(`row') var(`var') varlabel(`label') bfmt(`b') star("`star'") ci("`ci'") `eform' `nop'
-			local ++row
-			local printed "`printed' `lab'"
-				
-		}
-		else {
-			di as error "{error} Program does not support this type of parameter"
-		
-		}
-	local ++betarow
-	}
+		/** SET WIDTH OF THE TABLE                     **/
+		/**************************************************************************/
+		local nummodels :list sizeof estnames
+		// set the width of the table= nummodels + one rowheader column to display variable
+		// names and factor levels in case var is a factor
+		local totcols= `nummodels' +1
+	
+	create_table `estnames', pagesize(`pagesize') title(`title') `landscape' 
+	
 	
 	// set border on bottom of header row of table
 	putdocx table esttable(1,.), border(bottom)
-	// set border at bottom beta table
-	putdocx table esttable(`row',.), border(bottom)
 	
+	
+	/**************************************************************************/
+	/** PRINT THE TABLE FROM FRAME */
+	/**************************************************************************/
+	
+	
+	//read table data from frame 
+	local rows= _N // get the total number of rows in the frame that should be exported to word
+	local rowMSWord= 1 // rowindicator for MSWord table
+	local printed ""
+
+	// loop over rows in frame
+	forvalues rowframe= 1(1)`rows' {
+		
+		// 1. check the type of parameter 
+		local type= type[`rowframe']
+		local label= label[`rowframe']
+		local vlab=vlab[`rowframe']
+		
+		// 2. if factor 
+		if "`type'"=="factor" | "`type'"=="factor-interaction"{
+			//di "factor: `label': `vlabel'"
+			//add a variable header row and print varname if it has not been printed
+			//check if varname is in the list of printed varnames
+			
+			local lab= subinstr("`label'", " ", "", .) //remove all whitespace
+			local print : list posof "`lab'" in printed
+			//di "`printed'"
+			// if the header is not orinted add row for varheader
+			if !`print' {
+				// add header row with varname of factor variable
+				putdocx table esttable(`rowMSWord',.), addrows(1)
+				local ++rowMSWord
+				putdocx table esttable(`rowMSWord',1) = ("`label'"), bold font(Garamond, 11) halign(left)
+				local printed "`printed' `lab'" //add varname to list of printed headers
+			}
+			// print row with params for factor-level
+				putdocx table esttable(`rowMSWord',.), addrows(1)
+				local ++rowMSWord
+				putdocx table esttable(`rowMSWord',1) = ("`vlab'"), italic font(Garamond, 10) halign(center)
+				
+				//loop over columns of frame and set cell values of table for continious
+				forvalues col=2/`totcols' {
+					local estnum= `col'-1
+					local estname: word `estnum' of `estnames'
+					putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), font(Garamond, 10) halign(left)		
+					}
+				
+			
+		}
+		else if "`type'"=="continious" | "`type'"=="continious-interaction" | "`type'"=="const" {
+			//di "continious: `label'"
+			putdocx table esttable(`rowMSWord',.), addrows(1)
+			local ++rowMSWord
+			putdocx table esttable(`rowMSWord',1) = ("`label'"), bold font(Garamond, 11) halign(left)
+			//loop over columns of frame and set cell values of table for continious
+			forvalues col=2/`totcols' {
+				local estnum= `col'-1
+				local estname: word `estnum' of `estnames'
+				putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), ///
+				font(Garamond, 10) halign(left)
+				}
+		}
+	}
+
+		// set border at bottom beta table
+	putdocx table esttable(`rowMSWord',.), border(bottom)
+
+
 	/**************************************************************************/	
 	// ADD STATS TO BOTTOM OF TABLE IF stats!=null
 	/**************************************************************************/
-	if ("`stats'"!="") write_stats `models', stats(`stats') row(`row')
+	if ("`stats'"!="") write_stats `estnames', stats(`stats') row(`rowMSWord')
 	/**************************************************************************/	
 	// print a legend with significance values
 	/**************************************************************************/
 	qui putdocx describe esttable
-	if("`star'"!="none" & "`nop'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
+	if("`star'"!="" & "`nopval'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
+
 	/**************************************************************************/
-	/** Save worddocument             **/
+	/** Save worddocument if program is not in inline mode           **/
 	/**************************************************************************/
 	//putdocx describe esttable
 	if("`inline'"=="") putdocx save "`saving'", replace
@@ -583,19 +456,28 @@ program estdocx
 	/** Garbage collection             **/
 	/**************************************************************************/
 	//matrix drop _all
-
 end
-version 15.1
+
+version 17
 mata: mata set matastrict on
 mata: mata set matalnum on
 
+// macroed types
+local boolean real
+local TRUE    1
+local FALSE   0
+local SS      string scalar
+local SCV     string colvector
+local RS      real scalar
+
 mata:
-/*###############################################################################################*/
+/*#######################################################################################*/
 // STRUCTURES
-/*###############################################################################################*/
-/**************************************************************************/
-/** Structure PARAMVAR                     **/
-/**************************************************************************/
+/*#######################################################################################*/
+
+/**************************************************************************
+STRUCTURE paramvar
+**************************************************************************/
 struct paramvar {
 		string scalar vartype
 		string scalar varname
@@ -609,22 +491,9 @@ struct paramvar {
 
 }
 
-/**************************************************************************/
-/** Structure MODEL                     **/
-/**************************************************************************/
-struct model {
-	real matrix rtable
-	string vector params, stats
-
-
-}
-
-/*###############################################################################################*/
-// CLASSES
-/*###############################################################################################*/
-/**************************************************************************/
+/*#######################################################################################*/
 // CLASS parameter
-/**************************************************************************/
+/*#######################################################################################*/
 class parameter {
 	public:
 		string scalar paramtype		// type of paramter.. continious, factor, interaction
@@ -645,6 +514,9 @@ class parameter {
 	
 		
 }
+	/*#######################################################################################
+	// CLASS parameter FUNCTIONS
+	#######################################################################################*/
 	void parameter::setup(string scalar user_txt) {
 		real scalar i
 		struct paramvar scalar P
@@ -711,6 +583,9 @@ class parameter {
 			this.paramtype= this.vars[1].vartype
 		}
 	}
+	/***************************************************************************
+	Function 
+	****************************************************************************/
 	struct paramvar parameter::parsevar(string scalar vartext){
 			struct paramvar scalar P
 			real scalar rcode
@@ -769,7 +644,7 @@ class parameter {
 			
 			}
 			else {
-				_error(3300, "Parameter contains an non implemented value(s)")
+				_error(3300, "Parameter contains a value not implemented in estdocx")
 			}
 			
 			// check that a varlabel is set else return varname in P.label
@@ -778,6 +653,9 @@ class parameter {
 			
 			return(P)
 	}
+	/***************************************************************************
+	Function 
+	****************************************************************************/
 	void parameter::print() {
 		real scalar i
 			printf("{txt}___________________________________________________________\n")
@@ -803,450 +681,773 @@ class parameter {
 			printf("{txt}interaction is:{result} %f\n", this.interaction)
 			printf("{txt}___________________________________________________________\n")
 	}
-/**************************************************************************/
-// CLASS rowvarlist
-/**************************************************************************/
-class rowvarlist {
+/*#######################################################################################*/
+// CLASS model
+/*#######################################################################################*/
+class model {
 	public:
 		//public vars
-		string colvector unique
-		string colvector uvarnames
-		string colvector constants
+		string scalar    estname       // name of a stored estimate in memory
+		real   matrix    modscalars    // matrix with all data for model
+		string colvector statistics    // list of statistics returned by matrixcolstripe(r(table))
+		string colvector parameters    // full list of parameters from matrixrowstripe(r(table))
+		string colvector levels        // colvector with base and omitted removed used to match params across models
+		real   colvector interactions  // vector of boolean values indicating if parameter[row] is interaction
+		real   colvector base          // vector of boolean values indicating if parameter[row] is base
+		real   colvector omitted       // vector of boolean values indicating if parameter[row] is omitted
+		real   colvector constfree     // vector of boolean values indicating if parameter[row] is _const or free
 		
 		//public functions
-		void setup() // setup takes a namlist of stored estimates
-		void print()
+		void             setup()            // setup takes a name of a stored estimate in memory
+		void             print()            // prints object properties to screen
+		`RS'             get_beta()         // returns beta as real for a given level
+		`RS'             get_pvalue()       // returns pvalue as real for a given level
+		`RS'             get_ll()           // returns lower bound of ci as real for a given level
+		`RS'             get_ul()           // returns upper bound of ci as real for a given level
+		`boolean' scalar get_base()         // returns boolean==TRUE if level is a base
+		`boolean' scalar get_intr()         // returns boolean==TRUE if level is a interaction
+		`boolean' scalar get_eform()        // returns boolean==TRUE if level is in eform
 		
+	private:
+	    // private vars
+		class AssociativeArray scalar rtable // array to save rtable-data using string keys: parameter, statistic
 	
+		
+	    // private functions
+		void set_levels()
+		void set_interactions()
+		void set_base()
+		void set_omitted()
+		void set_constfree()
+		
+}
+	/*#######################################################################################
+	// CLASS model FUNCTIONS
+	#######################################################################################*/
+	void model::setup(string scalar estname) {
+		string scalar com
+		real scalar i, ii
+				
+		//get matrix rtable created by running estimates replay estname
+		com= "estimates replay " + estname
+		stata(com, 1)
+		stata("mat M= r(table)")
+		//stata("mat li M")
+		stata("mat M= M'")
+		
+		modscalars= st_matrix("M")
+
+		parameters= st_matrixrowstripe("M") //get varlist of model
+		statistics= st_matrixcolstripe("M") //get stats of model
+		statistics= statistics[.,2] 		//remove first col that is all missing
+		parameters= parameters[.,2] 		//remove first col that is all missing
+		
+		set_levels()        //set the string vector levels contining paramters with base/omitted stripped
+		set_interactions()  //set the boolean vector indicating if parameter/level is an interaction
+		set_base()          //set the boolean vector indicating if parameter/level is base/omitted
+		set_constfree()     //set the boolean vector indicating if parameter/level is _const or free
+		
+		// fill array rtable with data from modscalars for each statistics
+		// reinitate the assositative array as array with 3 dimention string keys
+		this.rtable.reinit("string", 2) 
+		this.rtable.notfound(.)
+		
+			for (ii=1; ii<=length(this.statistics); ii++) {
+				for (i=1; i<=length(this.levels); i++) {
+					this.rtable.put((this.statistics[ii], this.levels[i]), this.modscalars[i,ii])
+				}
+			}
+		
+	}
+	/***************************************************************************
+	Function returns boolean TRUE if supplied level is a baselevel
+	****************************************************************************/
+	`boolean' scalar model::get_base(`SS' level) {
+		`RS' i
+		
+		i= selectindex(regexm(this.levels, "^" + level + "$"))
+		//In cases where level is not in the list of model levels selectindex()
+		// will return J(0,0,.) an empty real vector and not a scalar
+
+		if(orgtype(i) == "scalar") return(this.base[i])
+		else return(`FALSE')
+	}
+	/***************************************************************************
+	Function returns boolean TRUE if supplied level is an interaction
+	****************************************************************************/
+	`boolean' scalar model::get_intr(`SS' level) {
+		`RS' i
+		
+		i= selectindex(regexm(this.levels, "^" + level + "$"))
+		//In cases where level is not in the list of model levels selectindex()
+		// will return J(0,0,.) an empty real vector and not a scalar
+
+		if(orgtype(i) == "scalar") return(this.interactions[i])
+		else return(`FALSE')
+	}
+	/***************************************************************************
+	Function returns boolean TRUE if supplied level is in eform
+	****************************************************************************/
+	`boolean' scalar model::get_eform(`SS' level) {
+		return(this.rtable.get(("eform", level)))
+	}
+	/***************************************************************************
+	Function returns beta-value for supplied level
+	****************************************************************************/
+	`RS' model::get_beta(`SS' level) {
+		return(this.rtable.get(("b", level)))
+	}
+	/***************************************************************************
+	Function returns p-value string param 
+	****************************************************************************/
+	`RS' model::get_pvalue(`SS' level) {
+		return(this.rtable.get(("pvalue", level)))
+	}
+	/***************************************************************************
+	Function returns upper bound of ci as real
+	****************************************************************************/
+	`RS' model::get_ul(`SS' level) {
+		return(this.rtable.get(("ul", level)))
+	}
+	/***************************************************************************
+	Function returns lower bound of ci as real
+	****************************************************************************/
+	`RS' model::get_ll(`SS' level) {
+		return(this.rtable.get(("ll", level)))
+	}
+	/***************************************************************************
+	Function sets the boolean vector indicating if parameter/level is _const or free
+	****************************************************************************/
+	void model::set_constfree() {
+		real scalar r
+		
+		this.constfree= J(length(this.parameters), 1, .)
+		
+		for (r=1; r<=length(this.parameters); r++) {
+			// match paramaters that has _/ at beginning of string
+			this.constfree[r]= regexm(this.parameters[r], "^[_/]")
+		}
+			
+		
+	}
+	/***************************************************************************
+	Function sets the string vector levels contining pramters with base/omitted stripped
+	****************************************************************************/
+	void model::set_levels() {
+		real scalar r
+		string scalar param
+		
+		this.levels= J(length(this.parameters), 1, "")
+		
+		for (r=1; r<=length(this.parameters); r++) {
+			param= this.parameters[r]
+			// remove base and omitted charathers
+			while(regexm(param, "[bo]+\.")) param= regexr(param, "[bo]+\.", ".")
+			// remove contionious chanter in intercations
+			while(regexm(param, "[c]+\.")) param= regexr(param, "[c]+\.", "")
+			
+			
+			this.levels[r]=param
+		}
+			
+		
+	}
+	/***************************************************************************
+	Function sets the boolean vector indicating if parameter/level is an interaction
+	****************************************************************************/
+	void model::set_interactions() {
+		`RS' r
+		
+		this.interactions= J(length(this.parameters), 1, .)
+		
+		for (r=1; r<=length(this.parameters); r++) {
+			this.interactions[r]= (strrpos(this.parameters[r],"#") > 0)
+		}
+	}
+	/***************************************************************************
+	Function sets the boolean vector indicating if parameter/level is base/omitted
+	****************************************************************************/
+	void model::set_base() {
+		`RS' r, i, baseom
+		`SS' prefix
+		`SCV' intervars
+		
+		this.base= J(length(this.parameters), 1, .)
+			
+		for (r=1; r<=length(this.parameters); r++) {
+		
+			if (this.interactions[r]) {
+				//check if all incuded factors in interaction are base or omitted
+				intervars=tokens(subinstr(this.parameters[r], "#", " ") ) //matrix with varnames forming the interaction
+				
+				baseom= 0
+				
+				for (i=1; i<=length(intervars); i++) {
+					// assign part of string before . to P.prefix
+					prefix= substr(intervars[i] , 1 , strrpos(intervars[i],".")-1 )
+					// increment bases if it is a base or omitted factor
+					if(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o")  > 0) baseom++
+				}
+				
+				// check if all factors are base or omitted
+				this.base[r]= (length(intervars)==baseom)
+			
+			}
+			else {	// if it is not an interaction
+				prefix= substr(this.parameters[r] , 1 , strrpos(this.parameters[r],".")-1)
+				this.base[r]=(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o") > 0) 
+			}	
+		}		
+	}
+	/***************************************************************************
+	Function prints object properties to screen
+	****************************************************************************/
+	void model::print() {	
+		
+		`SS' tabrowtxt, colwith
+		`RS' i
+		
+		colwith=strofreal(max(strlen(this.parameters))+10)
+		colwith
+		
+		//this.parameters, this.levels, strofreal(this.interactions), strofreal(this.base)) 
+		
+		printf("{txt}--- Object model: --------------------------------------\n")
+		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}")
+		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}")
+		printf("{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}{txt}1234{c |}6789{c |}\n\n")
+		//hline 1
+		printf("{hline 4 }{c +}") //5
+		printf("{hline 34}{c +}") //40
+		printf("{hline 3 }{c +}") //44
+		printf("{hline 3 }{c +}") //48
+		printf("{hline 3 }{c +}") //52
+		printf("{hline 26}{c +}\n") //79
+		//hline 2
+		printf("{txt}{space 2}R{space 1}{c |}")
+		printf("{space 1}parameters{col 40}{c |}")
+		printf("{space 1}#{space 1}{c |}")
+		printf("{space 1}B{space 1}{c |}")
+		printf("{space 1}C{space 1}{c |}")
+		printf("{space 1}levels{col 79}{c |}\n")
+		//hline 2
+		printf("{hline 4 }{c +}") //5
+		printf("{hline 34}{c +}") //40
+		printf("{hline 3 }{c +}") //44
+		printf("{hline 3 }{c +}") //48
+		printf("{hline 3 }{c +}") //52
+		printf("{hline 26}{c +}\n") //79
+		// lines table
+		for (i=1; i<=length(this.parameters); i++) {
+			
+			            tabrowtxt= "{result}{space 1}%2.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%s{col 40}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%1.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%1.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%1.0f{space 1}{txt}{c |}"
+			tabrowtxt= tabrowtxt + "{result}{space 1}%s{col 79}{txt}{c |}\n"
+			
+			printf(tabrowtxt, i, this.parameters[i], this.interactions[i], this.base[i], this.constfree[i], this.levels[i])
+		}
+		printf("{txt}{hline 4}{c BT}")
+		printf("{hline 34}{c BT}")
+		printf("{hline 3 }{c BT}")
+		printf("{hline 3 }{c BT}")
+		printf("{hline 3 }{c BT}")
+		printf("{hline 26}{c BT}\n")
+		
+		
+		
+		printf("{txt}estname is:{result} %s\n", this.estname)
+		printf("{txt}___________________________________________________________\n")
+		
+	}	
+/*#######################################################################################*/
+// CLASS estdocxtable
+/*#######################################################################################*/
+class estdocxtable {
+	public:
+		//public vars
+		class     model colvector models
+		class     parameter scalar par
+
+		string    colvector levels                // uniq ordered list of levels
+		string    colvector terms                 // colvector with unique set of terms in all models
+		string    colvector keep                  // terms to keep in the table and their ordering
+		string    colvector types
+		string    colvector labels
+		string    colvector vlabs
+		string    scalar    fname                 // framename used to store the table
+		string    scalar    bfmt                  // %fmt for beta
+		string    scalar    ci                    // %fmt for confidence interval
+		`boolean' scalar    eform
+		`boolean' scalar    baselevels
+		`boolean' scalar    nopval
+		real      colvector star                  // numeric vector of sig < P cuttofs for * significanse markers
+		
+		//public functions
+		void      setup()                          // setup takes a namlist of stored estimates
+		void      create_display_frame()
+		void      print()
+		void      set_star()
+		
+		
 	private:
 		//private vars
-		
+		string vector estnames              // vector of the name of estimates
 		
 		//private functions
-		string colvector get_uniqvarnames()
+		void   set_ulevels()             // computes the uniq ordered list of levels that form the rows of table
+		void   set_terms()               // computes the uniq ordered list of terms
+		void   set_keep()                // computes the uniq ordered list of levels that form the rows of table
 		
-	
-	
-	
-	
+		void   create_display()
+		`SS'   get_beta()
+		`SS'   get_pvalue()
+		`SS'   get_ci()
+		
 }
-	/*########################################################################
-	// CLASS rowvarlist FUNCTIONS
-	########################################################################*/
+/*#######################################################################################
+// CLASS estdocxtable FUNCTIONS
+#######################################################################################*/
+	void estdocxtable::setup(`SS' estnames_txt,
+					       | `SS' baselevels_txt,
+		                     `SS' bfmt_txt,
+		                     `SS' ci_txt,
+		                     `SS' star_txt,
+		                     `SS' nopval_txt,
+		                     `SS' eform_txt,
+						     `SS' fname_txt,
+					         `SS' keep_txt
+						   ) {
+		real scalar i
+
+		// convert string scalar to string vector of estnames
+		estnames= tokens(estnames_txt)
+		
+		//return colvector model objects
+		models= model(length(estnames))
+		
+		// run setup of model objects for estnames
+		for (i=1; i<=length(estnames); i++) {
+			models[i].setup(estnames[i])
+			//models[i].print()
+		}
+		
+	// set options in table object
+	if(star_txt!="") this.star= strtoreal(tokens(star_txt))
+	
+	// set option nopval
+	if(nopval_txt=="nopval") this.nopval= `TRUE'
+	else this.nopval= `FALSE'
+	
+	// set options in table object
+	if(baselevels_txt=="baselevels") this.baselevels= `TRUE'
+	else this.baselevels= `FALSE'
+	
+	//set option eform
+	if(eform_txt=="eform") this.eform= `TRUE'
+	else this.eform= `FALSE'
+	
+	this.bfmt= bfmt_txt // default is %04.2f set in main of ado
+	
+	if(ci_txt!="") this.ci= ci_txt
+	
+	this.set_ulevels()
+	this.set_terms()
+		
+	// convert string scalar to string vector of estnames
+	if(keep_txt!="") {
+		this.keep= tokens(keep_txt)				
+		this.set_keep()
+		}
+		
+
+	
+		
+	// run setup of parameter objects 
+	for (i=1; i<=length(this.levels); i++) {
+			par.setup(this.levels[i])
+			this.types= this.types\par.paramtype
+			this.labels= this.labels\par.comblabel
+			this.vlabs= this.vlabs\par.combvlab
+			
+		}
+	}
 	/***************************************************************************
-	Function takes a vector of all paramters in all models and returns the unique
-	list of pramameters with all duplicates removed => function as the rows
+	Function takes a vector of model objects models and returns the unique
+	list of levels with all duplicates removed => function as the rows
 	of the regression table
 	****************************************************************************/
-	void rowvarlist::setup(string colvector allparams) {
-
-	real scalar i, ii, found
-	string scalar param, varname, prefix, find
+	void estdocxtable::set_ulevels() {
+	string colvector constants
+	real scalar i, ii
+	string scalar level
 		
-		//declare colvector allvars
-		this.constants= J(0, 1, "")
+		//declare colvector constants
+		constants= J(0, 1, "")
 		
-		// get the unique set of varnames in models with prefix stripped
-		this.uvarnames= get_uniqvarnames(allparams)
+		for (i=1; i<=length(this.models); i++) {
 		
-		for (i=1; i<=length(this.uvarnames); i++) {
-			// check if varname is a constant or free and at it to constants if not already there
-			if(regexm(this.uvarnames[i], "^[_/]") & !anyof(this.constants, this.uvarnames[i])) this.constants=this.constants\this.uvarnames[i]
+			for (ii=1; ii<=length(this.models[i].levels); ii++) {
+				level= this.models[i].levels[ii]
 					
-			find= "[0-9]*[obc]*\." + this.uvarnames[i] 
-			//loop over complete list of parameters
-			for (ii=1; ii<=length(allparams); ii++) {
-				// check if the varname match find and it it to unique if not already there
-				if(regexm(allparams[ii], find) & !anyof(this.unique, allparams[ii])) {
-					//printf("{txt}pattern: {res}%s {txt}mathed to: {res}%s\n", find, allparams[ii])
-					this.unique= this.unique\allparams[ii]
+				// if it is constant or free and not in this.constants add it to constants
+				if(this.models[i].constfree[ii]) {
+					if(!anyof(constants, level)) constants= constants\level
+				}
+				
+				// if it is not an interaction add it regardless and jump to next level
+				else if(!this.models[i].get_intr(level)) { 
+					if(!anyof(this.levels, level)) this.levels= this.levels\level
+				}
+				
+				// if it is an interaction and not a baselevel add it and jump to next level
+				else if(!this.models[i].get_base(level)) { 
+					if(!anyof(this.levels, level)) this.levels= this.levels\level
+				}
+				// if baselevels add it anyway and jump to next level
+				else if(this.baselevels==`TRUE') { 
+					if(!anyof(this.levels, level)) this.levels= this.levels\level
 				}
 			}
-			
 		}
-
 		
 		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
-		this.unique= this.unique\this.constants
+		this.levels= this.levels\constants
+		
+
+		
+	
+		
 		
 	}
 	/***************************************************************************
-	Function takes of all paramters in all models and returns the unique varnames
-	found in the list of complete stack of paramters
+	Function takes a vector of model objects models and returns the unique
+	list of levels with all duplicates removed => function as the rows
+	of the regression table
 	****************************************************************************/
-	string colvector rowvarlist::get_uniqvarnames(allparams) {
-
-	string colvector allvarnames, uvarnames
-	string scalar param, vars, var
-	real scalar i, ii
-
-		allvarnames= J(0, 1, "")
+	/***************************************************************************
+	Function sets the string vector levels contining pramters with base/omitted stripped
+	****************************************************************************/
+	void estdocxtable::set_terms() {
+		real scalar r
+		string scalar term
 		
-			// remove numbers and letters before up until and including .
-			for (i=1; i<=length(allparams); i++) {
-				param= allparams[i,1]
-				// for each mach of prefix remove it until non are left
-				while(regexm(param, "[0-9]*[obc]*\.")) param= regexr(param, "[0-9]*[obc]*\.", "")
-				//split by # into vector of varnames in the parameter
-				vars= tokens(param, "#")
-				for (ii=1; ii<=length(vars); ii++) {
-					// add the var to varnames with the prefix removed
-					if(vars[ii]!="#") allvarnames= allvarnames\vars[ii]
+		this.terms= J(length(this.levels), 1, "")
+		
+		for (r=1; r<=length(this.levels); r++) {
+			term= this.levels[r]
+			// remove factor, base, omitted and continious charathers
+			while(regexm(term, "[0-9boc]+\.")) term= regexr(term, "[0-9boc]+\.", ".")
+			term= subinstr(term, ".", "")
+			this.terms[r]= term
+		}
+			
+		
+	}
+	/***************************************************************************
+	Function limits the set of levels displayed in the table
+	****************************************************************************/
+	void estdocxtable::set_keep() {
+		`RS' i, ii
+		`SCV' keeplevels
+		real colvector add
+		`SS' term
+		
+			//check that all all terms in keep exists in models
+			for (i=1; i<=length(this.keep); i++) {
+				
+				if(!anyof(this.terms, this.keep[i])) {
+					printf("{error}ERROR: The term {txt}%s{error} is incorrectly specified or does not exist in any of the models{txt}\n", this.keep[i])
+					exit(error(193))
 				}
 			}
-			
-			// remove all duplicate varnames
-			uvarnames= J(0, 1, "")
-			for (i=1; i<=length(allvarnames); i++) {
-				var= allvarnames[i,1]
-				// check if cof is already in uvarnames and add it if it is not
-				if(!anyof(uvarnames, var)) uvarnames= uvarnames\var
+		
+		
+		//declare colvector this_unique => limited and ordered version of coiffcents returned
+		keeplevels= J(0, 1, "")
+	
+		//loop over terms to be keept
+		for (i=1; i<=length(this.keep); i++) {
+		
+			add= J(0, 1, .)
+			for (ii=1; ii<=length(this.terms); ii++) {
+				if(this.terms[ii]==this.keep[i]) add= add\ii
+				
 			}
 			
-			return(uvarnames)
-					
+		keeplevels	= keeplevels\this.levels[(add)]
+		}
+
+		this.levels= keeplevels
+		
+	}
+	/***************************************************************************
+	Function writes paramters for all estnames to display frame
+	****************************************************************************/
+	void estdocxtable::create_display_frame(| string scalar fname) {
+		string matrix table
+		string colvector frames
+		string scalar colwidh, paramtext
+		real   scalar i, ii, mpl, c, varindex
+
+		if(fname=="" ) this.fname= st_tempname()
+		else this.fname= fname
+	
+		frames= st_framedir()
+		
+		//check if there is a frame in memory with the same name as this.fname
+		//and drop it from memory if there is
+		for (i=1; i<=length(frames); i++) {
+			if(frames[i]==this.fname) {
+				st_framecurrent("default")
+				st_framedrop(this.fname)
+			}
+		}
+		
+		//create the frame for the table and switch to frame
+		st_framecreate(this.fname)
+		st_framecurrent(this.fname)
+				
+		// add column for paramters with a widh/characthers of the longest parameter
+		varindex= st_addvar(max(strlen(this.levels)), "params")
+		varindex= st_addvar(max(strlen(this.types)), "type")
+		varindex= st_addvar(max(strlen(this.labels)), "label")
+		varindex= st_addvar(max(strlen(this.vlabs)), "vlab")
+	
+		
+		// add columns for for each model
+		for (i=1; i<=length(this.estnames); i++) {
+			varindex= st_addvar("str25", this.estnames[i])
+		}
+				
+		
+		// add rows euqal
+		st_addobs(length(this.levels))
+
+		
+		st_sview(table, ., .)  // load dataset from stata
+		
+		for (i=1; i<=length(this.levels); i++) {
+			// write full parameter text to row header
+			table[i,1]= this.levels[i]
+			// måste skapa vector med param-object innan jag är i view-frame
+			table[i,2]= this.types[i]
+			table[i,3]= this.labels[i]
+			table[i,4]= this.vlabs[i]
+			
+			// get stats for each model and form the celltext
+			for (ii=1; ii<=length(this.models); ii++) {
+				c= ii+4
+				
+				
+				//always get beta
+				paramtext= this.get_beta(this.models[ii], this.levels[i])
+				
+				
+				// if ci is TRUE add/get CI, that it is valied fmt is confirmed in main ado
+				if(this.ci!="") paramtext= paramtext + this.get_ci(this.models[ii], this.levels[i])
+			
+				
+				//add/get p-value
+				if(!this.nopval) paramtext= paramtext + this.get_pvalue(this.models[ii], this.levels[i])
+			
+				// write full parameter text to cell in display frame
+				table[i,c]= paramtext
+				
+			}
+		}
+		
+		
+
+	}
+	/***************************************************************************
+	Function returns formated beta-value string for model, param 
+	****************************************************************************/
+	`SS' estdocxtable::get_beta(class model scalar mod, `SS' level) {
+		string scalar beta
+
+		
+		if(mod.get_base(level))	{
+			beta= "(base)"
+		}
+		else if(!this.eform){
+			beta= sprintf(this.bfmt, mod.get_beta(level))
+		}
+		else {
+			
+			if(!mod.get_eform(level)) beta= sprintf(this.bfmt, exp(mod.get_beta(level)))
+			else beta= sprintf(this.bfmt, mod.get_beta(level))
+			
+		}
+		return(beta)
+		
+	}
+	/***************************************************************************
+	Function returns formated CI string for model, param 
+	****************************************************************************/
+	`SS' estdocxtable::get_ci(class model scalar mod, `SS' level) {
+		string scalar ci, lowb, highb
+		real scalar ll, ul
+		
+		ll= mod.get_ll(level)
+		ul= mod.get_ul(level)
+		
+		// 95% CIs
+		lowb= strofreal(ll, this.ci)
+		highb= strofreal(ul, this.ci)
+		if(lowb!=".") ci= " (" + lowb + " " + highb + ")"
+				
+		return(ci)
+		
+	}
+	/***************************************************************************
+	Function returns formated p-value string for model, param 
+	****************************************************************************/
+	`SS' estdocxtable::get_pvalue(class model scalar mod, `SS' level) {
+		string scalar pvalue
+		real scalar p, i
+		
+		p= mod.get_pvalue(level)
+		
+		if(length(this.star)) {
+			//add stars according to cutoffs
+			for(i=1; i<=cols(this.star); i++) {
+				if  (p < this.star[i]) pvalue= pvalue + "*"
+				}
+		}
+		else {
+			// star is FALSE return numeric pvalue
+			pvalue= substr(strofreal(p, "%5.3f"), 2, .)
+			// if there is a pvalue add that to the pramter in pertenthesis
+			if(pvalue!="")  pvalue= " (" + pvalue + ")"
+		}
+		
+		
+
+		return(pvalue)
+		
+	}
+	/***************************************************************************
+	Function displays table of object propreties
+	****************************************************************************/
+	void estdocxtable::print() {
+		real scalar i
+		printf("{txt}{hline 80}\n")
+		printf("{txt}------------------ OBJECT ESTDOCXTABLE: -----------------------------------\n")
+		printf("{txt}{hline 80}\n")
+		printf("{txt}estnames is:")
+		for (i=1; i<=length(this.estnames); i++) {
+			printf("{result} %s, ", this.estnames[i])
+		}
+		printf("\n")
+		printf("{txt}baselevels is:{result} %f\n", this.baselevels)
+		printf("{txt}bfmt is:{result} %s\n", this.bfmt)
+		printf("{txt}ci is:{result} %s\n", this.ci)
+		printf("{txt}eform is:{result} %f\n", this.eform)
+		printf("{txt}fname is:{result} %s\n", this.fname)
+		printf("{txt}nopval is:{result} %f\n", this.nopval)
+		printf("{txt}star is:")
+		for (i=1; i<=length(this.star); i++) {
+			printf("{result} %f, ", this.star[i])
+		}
+		printf("\n")
+		
+		printf("{txt}---------------------------------------------------------------------------\n")
+		"estnames" 
+		this.estnames
+		"levels"
+		this.levels
+		"terms"
+		this.terms
+	
+		printf("{txt}{hline 80}\n")
+		printf("{txt}------------------ END OBJECT ESTDOCXTABLE: -------------------------------\n")
+		printf("{txt}{hline 80}\n")
+		
 	}
 
-/*###########################################################################################*/
-// FUNCTIONS
-/*###########################################################################################*/
-void get_param(real scalar param, string scalar bfmt, real scalar sig, string scalar star, string scalar nop, string scalar cifmt, real scalar ll, real scalar ul) {
-	// param is BETA
-	// sig is p-value
-	// star is cutoffs for number of stars
-	// fmt is fomrat for BETA
-	string scalar parameter, pvalue, lowb, highb, ci
-	real rowvector this_star
-	real scalar i, level
+/*###############################################################################################
+// FUNCTIONS CALLED DIRECTLY FROM ADO
+###############################################################################################*/
+//# Bookmark #2
+
+void create_frame_table(`SS' estnames,
+					  | `SS' baselevels,
+		                `SS' bfmt,
+		                `SS' ci,
+		                `SS' star,
+		                `SS' nopval,
+		                `SS' eform,
+						`SS' fname,
+					    `SS' keep
+		                ) {
+	//declare function objects, structures and variables						
+	class estdocxtable scalar table
+	string scalar orgframe
+	//print_opts(estnames, keep, bfmt, ci, star, baselevels, nopval, eform, fname)
 	
-	this_star= strtoreal(tokens(star))
-	/*
-	printf("{txt}param is:{result} %f\n", param)
-	printf("{txt}sig is:{result} %f\n", sig)
+	// if program ha been run prior to running with the option fname current frame will
+	// not be the dataframe used to run the estimates but viewframe and routine will not before
+	// able to read varaible properties for the models r(orgframe) will not be null => Swith to  
+	
+
+	// I need to set up all the options in the setup function for teh class to work
+	table.setup(estnames,
+				baselevels,
+		        bfmt,
+		        ci,
+		        star,
+		        nopval,
+		        eform,
+				fname,
+				keep)
+
+	table.create_display_frame(fname)
+
+	table.print()
+	
+	
+}
+
+/*###############################################################################################*/
+void print_opts(`SS' estnames,
+              | `SS' keep,
+		        `SS' bfmt,
+		        `SS' ci,
+		        `SS' star,
+		        `SS' baselevels,
+		        `SS' nopval,
+		        `SS' eform,
+				`SS' fname
+		        ) {
+	printf("{txt}--- INPUT: --------------------------------------\n")
+	
+	printf("{txt}estnames is:{result} %s\n", estnames)
+	printf("{txt}keep is:{result} %s\n", keep)
+	printf("{txt}bfmt is:{result} %s\n", bfmt)
+	printf("{txt}ci is:{result} %s\n", ci)
 	printf("{txt}star is:{result} %s\n", star)
-	
-	printf("{txt}format of this_star is:{result} %s %s\n", eltype(this_star), orgtype(this_star))
-	printf("{txt}format of this_star is:{result} %s %s\n", eltype(this_star), orgtype(this_star))
-
-	"star is:"
-    this_star
-	
-	printf("{txt}fmt is:{result} %s:\n", fmt)
-	*/
-	// basic test that star option is in allowed format
-	if (star!="none" & this_star==.) _error("Option star() has unallowed format")
-	//if (orgtype(this_star)!="rowvector" |  eltype(this_star)!="real") _error("Option star() has unallowed format")
-	
-	
-	if (param==1 | param==0) {
-		parameter= "(base)" // return base string for basevalues
-	}
-	else {
-		parameter= subinstr(strofreal(param, bfmt) ," ","")
-		
-			// significanse
-			// only add significanse value to paramter string if nop is false
-			if(nop=="") {
-				if(star=="none"){
-					// just report p-value as numeric scalar
-					pvalue= substr(strofreal(sig, "%5.3f"), 2, .)
-					// if there is a pvalue add that to the pramter in pertenthesis
-					if(pvalue!="") parameter= parameter + " (" + pvalue + ")"
-					
-				}
-				else {
-					//add stars according to cutoffs
-					for(i=1; i<=cols(this_star); i++) {
-						if  (sig < this_star[i]) parameter= parameter + "*"
-						}
-				}
-			}
-			// 95% CIs
-			if(cifmt!="") {
-				lowb= strofreal(ll, cifmt)
-				highb= strofreal(ul, cifmt)
-				ci= " (" + lowb + "-" + highb + ")"
-				// if there is a pvalue add that to the parameter in pertenthesis
-				if(lowb!=".") parameter= parameter + ci
-				
-			}	
-	}
-	st_local("param", parameter)
-}
-
-void models_param_table(string scalar models, string scalar varlist){
-	string scalar model, param
-	string vector this_models, this_varlist, rownames, colnames
-	real scalar a, b, c, nummodels, rowvarlist, rowmodel, col, mlenth, rowsum
-	real vector baselevels	// vector of booleans= TRUE if row of model_betas only contains 1 or .
-	real matrix model_betas, model_p, model_ll, model_ul, rtable, eform
-	string matrix A
-	
-	// convert string scalar to string vector
-	this_models= tokens(models)
-	this_varlist= tokens(varlist)
-	
-	model_betas= J(length(this_varlist), length(this_models), .)
-	model_p= J(length(this_varlist), length(this_models), .)
-	model_ll= J(length(this_varlist), length(this_models), .)
-	model_ul= J(length(this_varlist), length(this_models), .)
-	eform= J(length(this_varlist), length(this_models), .)
-	
-	col=1
-	for (a=1; a<=length(this_models); a++) {
-		model= this_models[1,a]
-		
-		//get matrix rtable created by running estimates replay `model' in get_models
-		rtable= st_matrix(model)
-		rownames= st_matrixrowstripe(model) //get varlist of model
-		colnames= st_matrixcolstripe(model) //get stats of model
-		colnames= colnames[.,2] 			//remove first row that is all missing
-		rownames= rownames[.,2] 			//remove first row that is all missing
-		
-		// remove letters indicating base, omitted, continious from rownames
-		// as these are removed from varlist in function models_varlist that
-		// is passed to this function from get_models
-		for (b=1; b<=length(rownames); b++) {
-			//remove b, o, c only from part of string before the .
-			rownames[b,1]=subinstr(rownames[b,1], "b.", ".")
-			rownames[b,1]=subinstr(rownames[b,1], "o.", ".")	
-		}
-		//loop over varlist and populate matrix model_betas, model_p, model_ll, model_ul, eform
-		for (c=1; c<=length(this_varlist); c++) {
-			param= this_varlist[1,c]
-			//check if param is in rownames of the model
-			if (anyof(rownames, param)){ //if param is in the list of varnames get the index
-				
-				rowvarlist= getindex(param, this_varlist) //find row of param in unique varlist
-				rowmodel= getindex(param, rownames)       //find row of param in rownames
-				
-				model_betas[rowvarlist, col]= rtable[rowmodel, getindex("b", colnames)]
-				model_p[rowvarlist, col]= rtable[rowmodel, getindex("pvalue", colnames)]
-		
-				
-				model_ll[rowvarlist, col]= rtable[rowmodel, getindex("ll", colnames)]
-				model_ul[rowvarlist, col]= rtable[rowmodel, getindex("ul", colnames)]
-				
-				eform[rowvarlist, col]= rtable[rowmodel, getindex("eform", colnames)]
-			}
-			
-		}
-		//increment column
-		++col
-	}
-	
-	//create colvector baselevels indicating rows that only contain 1:s or . ==baselevel
-	baselevels= J(rows(model_betas), 1, .)
-	
-	for (a=1; a<=rows(model_betas); a++) {
-		rowsum=0
-		
-		for (b=1; b<=cols(model_betas); b++) {
-			if (model_betas[a,b]==. | model_betas[a,b]==1 | model_betas[a,b]==0) rowsum++
-		}
-		// if rowsum== columns of model_betas row only contains baselevels
-		if (rowsum== cols(model_betas)) baselevels[a,1] = 1
-		else baselevels[a,1] = 0
-	}
-	
-	st_matrix("model_betas", model_betas)
-	st_matrix("model_p", model_p)
-	st_matrix("model_ll", model_ll)
-	st_matrix("model_ul", model_ul)
-	st_matrix("eform", eform)
-	st_matrix("baselevels", baselevels)
-	
-	//måste lägga till en tom rad för att funka med colstripe etc. nedan
-	A= J(length(this_varlist), 1, "")
-	this_varlist= this_varlist'
-	this_varlist= A,this_varlist
-	
-	A= J(length(this_models), 1, "")
-	this_models= this_models'
-	this_models= (A,this_models)
-	
-	// set the row and colnames of the returned matrices
-	st_matrixrowstripe("model_betas", this_varlist)
-	st_matrixrowstripe("model_p", this_varlist)
-	st_matrixrowstripe("model_ll", this_varlist)
-	st_matrixrowstripe("model_ul", this_varlist)
-	st_matrixrowstripe("eform", this_varlist)
-	
-	st_matrixcolstripe("model_betas", this_models)
-	st_matrixcolstripe("model_p", this_models)
-	st_matrixcolstripe("model_ll", this_models)
-	st_matrixcolstripe("model_ul", this_models)
-	st_matrixcolstripe("eform", this_models)
-}
-//# Bookmark #1
-
-void models_varlist(string scalar models, |string scalar cofkeep){
-	string scalar model, param, level
-	string vector this_models
-	real scalar i, ii, found, nummodels
-	string matrix rownames, allvars, unique
-	string colvector constants
-	
-	// convert string scalar to string vector
-	this_models= tokens(models)
-	nummodels=length(this_models)
-	
-	//declare colvector allvars
-	allvars= J(0, 1, "") 
-	
-	//loop over vector this_models and get rownames
-	for (i=1; i<=nummodels; i++) {
-		model= this_models[1,i]
-		//printf("{txt}Model is:{c |}  {res}%s\n", model)
-		
-		rownames= st_matrixrowstripe(model) //get varlist of model
-		rownames= rownames[.,2] //remove first row that is all missing
-		allvars= rownames\allvars  //add model parameters as additionl rows in allvars
-	}
-	
-	// remove letters indicating base, omitted, continious
-	for (i=1; i<=length(allvars); i++) {
-		//remove b, o, c only from part of string before the .
-		allvars[i,1]=subinstr(allvars[i,1], "b.", ".")
-		allvars[i,1]=subinstr(allvars[i,1], "o.", ".")	
-	}
-		
-	//set first cell in vector unique to first paramater in allvars
-	unique= allvars[1,1]
-
-	//loop over complete list of parameters and add ones not in unique
-	for (i=2; i<=length(allvars); i++) {
-		//boolean for indicating if paramter is added or not the the unique list
-		found=0
-		//set string scalar param to paramter i of allvars
-		param= allvars[i,1]
-		
-		// loop over unique and set found==TRUE if parameter is already in list
-		for (ii=1; ii<=length(unique); ii++) {
-			if (strmatch(unique[ii,1], param)) found=1				
-		}
-		
-		// first check if param is a constant or ancilliary
-		if(strmatch("_cons", param)) {
-			constants= constants\param
-			found=1
-		}
-			
-		
-		//if param is not already in list add it to vector unique and string parameters
-		//printf("{txt}param: {res}%s {txt}found: {res}%f\n", param, found)
-		if(!found){
-			unique= unique\param
-			}
-	}
-	
-	// add constants to the end of the rowvarlist
-	unique= unique\uniqrows(constants)
-	
-	//"uniqrows is:"
-	//test= uniqrows(allvars) 
-	//test
-	"uniqe is:"
-	unique
-	
-	
-	//IMPLEMENT KEEP OPTION HERE
-	// function taking colvector unique as argument and returning sorted and
-	// constrained version using string scalar cofkeep as selection criteria
-	if(args()==2) unique= keeping(unique, cofkeep)
-	
-	st_local("modelvars", invtokens(unique'))
-	st_local("numparams", strofreal(length(unique)))
-	
-}
-
-string colvector keeping(string colvector unique, string scalar vars) {
-	string colvector this_unique, keepvars, modelvars
-	real scalar i, ii
-	string scalar cof
-	
-	// make rowvector of string keepvars (list of variables to be retained in table)
-	keepvars= tokens(vars)
-	
-	//declare colvector this_unique => limited and ordered version of coiffcents returned
-	modelvars= J(0, 1, "")
-	
-	//check that all keepvars exists in models
-		for (i=1; i<=length(unique); i++) {
-			//make colvector of the coifficents in models diregarding levels
-			// remove i. and c. from coef in unique
-			cof= unique[i,1]
-			while(regexm(cof, "[0-9]+\.")) cof= regexr(cof, "[0-9]+\.", "")
-			while(regexm(cof, "c\.")) cof= regexr(cof, "c\.", "")
-			modelvars= modelvars\cof
-		}
-		
-		for (i=1; i<=length(keepvars); i++) {
-			// if a varaible in keepwars is not found in modelvars trow error
-			if(!anyof(modelvars, keepvars[1,i])) _error(193, "Variable specfied in keep does not exist in models")
-		}
-		
-	//declare colvector this_unique => limited and ordered version of coiffcents returned
-	this_unique= J(0, 1, "")
-	
-	for (i=1; i<=length(keepvars); i++) {
-			
-		for (ii=1; ii<=length(unique); ii++) {
-			// calc cof from unique to match against current value of keepvar =>
-			// include in this_unique if coef matches value of keepvars 
-			cof= unique[ii,1]
-			while(regexm(cof, "[0-9]+\.")) cof= regexr(cof, "[0-9]+\.", "")
-			while(regexm(cof, "c\.")) cof= regexr(cof, "c\.", "")
-			
-			//check if cof is equal to keepvars and include it in this_unique if it is
-			if(keepvars[1,i]==cof) this_unique= this_unique\unique[ii,1]
-		}
-	}
-	
-	return(this_unique)
+	printf("{txt}baselevels is:{result} %s\n", baselevels)
+	printf("{txt}nopval is:{result} %s\n", nopval)
+	printf("{txt}eform is:{result} %s\n", eform)
+	printf("{txt}fname is:{result} %s\n", fname)
+	printf("{txt}__________________________________________________\n")
 }
 
 
 
-void paramtype(string scalar param) {
-	class parameter scalar P
-	
-	P.setup(param)
-	st_local("paramtype", P.paramtype)
-	st_local("vlab", P.combvlab)
-	st_local("label", P.comblabel)
 
-
-}
-
-real scalar getindex(string scalar val, string vector names) {
-	real scalar i
-	//if a colvector is passed transpose to rowvector
-	if(orgtype(names)=="colvector") names= names'
-	//"names"
-	//names
-	for (i=1; i<=length(names); i++) {
-				
-		if (names[1,i]== val) {
-			//printf("{txt}index of {res}%s {txt}is {res}%f\n",val, i)
-			return(i)
-		}
-	}
-}
 
 
 end
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+
+
+
+
+
 
 
 
