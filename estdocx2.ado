@@ -869,11 +869,14 @@ class estdocxtable {
 	public:
 		//public vars
 		class     model colvector models
-		class     parameter colvector parvect
+		class     parameter scalar par
 
 		string    colvector levels                // uniq ordered list of levels
 		string    colvector terms                 // colvector with unique set of terms in all models
 		string    colvector keep                  // terms to keep in the table and their ordering
+		string    colvector types
+		string    colvector labels
+		string    colvector vlabs
 		string    scalar    fname                 // framename used to store the table
 		string    scalar    bfmt                  // %fmt for beta
 		string    scalar    ci                    // %fmt for confidence interval
@@ -958,6 +961,18 @@ class estdocxtable {
 		this.keep= tokens(keep_txt)				
 		this.set_keep()
 		}
+		
+
+	
+		
+	// run setup of parameter objects 
+	for (i=1; i<=length(this.levels); i++) {
+			par.setup(this.levels[i])
+			this.types= this.types\par.paramtype
+			this.labels= this.labels\par.comblabel
+			this.vlabs= this.vlabs\par.combvlab
+			
+		}
 	}
 	/***************************************************************************
 	Function takes a vector of model objects models and returns the unique
@@ -1001,18 +1016,9 @@ class estdocxtable {
 		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
 		this.levels= this.levels\constants
 		
-		// if keep is passed limit and order this.levels according to the supplied list of levels\constants
-		if(length(this.keep)) this.set_keep()
+
 		
-		// create a vector of parameter objects for the unique set of levels\constants
-		//return colvector parameters objects
-		parvect= parameter(length(this.levels))
-		
-		// run setup of model objects for estnames
-		for (i=1; i<=length(this.levels); i++) {
-			parvect[i].setup(this.levels[i])
-			//parvect[i].print()
-		}
+	
 		
 		
 	}
@@ -1104,14 +1110,11 @@ class estdocxtable {
 		st_framecreate(this.fname)
 		st_framecurrent(this.fname)
 				
-		//find maximum number of characthers in parameters
-		mpl=max(strlen(this.levels))
-		colwidh= "str" + strofreal(mpl) // stringfomrat mpl number of characthers
 		// add column for paramters with a widh/characthers of the longest parameter
-		varindex= st_addvar(colwidh, "params")
-		varindex= st_addvar(colwidh, "type")
-		varindex= st_addvar(colwidh, "label")
-		varindex= st_addvar(colwidh, "vlab")
+		varindex= st_addvar(max(strlen(this.levels)), "params")
+		varindex= st_addvar(max(strlen(this.types)), "type")
+		varindex= st_addvar(max(strlen(this.labels)), "label")
+		varindex= st_addvar(max(strlen(this.vlabs)), "vlab")
 	
 		
 		// add columns for for each model
@@ -1130,9 +1133,9 @@ class estdocxtable {
 			// write full parameter text to row header
 			table[i,1]= this.levels[i]
 			// måste skapa vector med param-object innan jag är i view-frame
-			table[i,2]= this.parvect[i].paramtype
-			table[i,3]= this.parvect[i].comblabel
-			table[i,4]= this.parvect[i].combvlab
+			table[i,2]= this.types[i]
+			table[i,3]= this.labels[i]
+			table[i,4]= this.vlabs[i]
 			
 			// get stats for each model and form the celltext
 			for (ii=1; ii<=length(this.models); ii++) {
@@ -1303,23 +1306,11 @@ void create_frame_table(`SS' estnames,
 
 	table.create_display_frame(fname)
 
-	//table.print()
+	table.print()
 	
 	
 }
-/*###############################################################################################*/
 
-/*###############################################################################################*/
-void paramtype(string scalar param) {
-	class parameter scalar P
-	
-	P.setup(param)
-	st_local("paramtype", P.paramtype)
-	st_local("vlab", P.combvlab)
-	st_local("label", P.comblabel)
-
-
-}
 /*###############################################################################################*/
 void print_opts(`SS' estnames,
               | `SS' keep,
