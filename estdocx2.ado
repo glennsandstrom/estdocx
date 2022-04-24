@@ -123,7 +123,6 @@
 
 	end
 	/*########################################################################*/
-**# Bookmark #1
 	program print_parameter
 		version 17
 	
@@ -223,6 +222,7 @@ program estdocx, rclass
 	if ("`stats'"=="none") local stats "" // set stat null string if stat(none)
 	
 	//find out the name of the current frame used to search for labels and vlables
+
 	qui frame pwf
 	local datafr= r(currentframe)
 	
@@ -242,7 +242,7 @@ program estdocx, rclass
 	
 	
 	//find out the name of the frame holding the regression table
-	//after mata routines the active frame will be the one holding the regression table
+	//after the mata routines the active frame will be the one holding the regression table
 	qui frame pwf
 	local tabfr= r(currentframe)
 	
@@ -270,38 +270,66 @@ program estdocx, rclass
 	/**************************************************************************/
 	/** PRINT THE TABLE FROM FRAME */
 	/**************************************************************************/
-	
-//read table data from frame 
-local rows= _N // get teh total number of rows of table
-local rowtab= 1
+	**# Bookmark #3
+		
+	//read table data from frame 
+	local rows= _N // get the total number of rows in the frame that should be exported to word
+	local rowMSWord= 1 // rowindicator for MSWord table
+	local printed ""
 
-// loop over rows in frame
-forvalues rowframe= 1(1)`rows' {
-	
-	putdocx table esttable(`rowtab',.), addrows(1, after) // add a row to the table
-
-	// increment rowtab to index of added row
-	local ++rowtab
-	
-	
-	local param= params[`rowframe']
-	
-	frames change `datafr'
-	mata: paramtype("`param'") //returns locals: paramtype, label, vlab
-	frames change `tabfr'
-/**/
-	//set the row header
-	putdocx table esttable(`rowtab',1) = ("`label'"), font(Garamond, 10) halign(center)
-	
-	//loop over columns of frame and set cell values of table
-	forvalues col=2/`totcols' {
+	// loop over rows in frame
+	forvalues rowframe= 1(1)`rows' {
+		
+		// 1. check the type of parameter 
+		local type= type[`rowframe']
+		local label= label[`rowframe']
+		local vlab=vlab[`rowframe']
+		
+		// 2. if factor 
+		if "`type'"=="factor" | "`type'"=="factor-interaction"{
+			//di "factor: `label': `vlabel'"
+			//add a variable header row and print varname if it has not been printed
+			//check if varname is in the list of printed varnames
+			
+			local lab= subinstr("`label'", " ", "", .) //remove all whitespace
+			local print : list posof "`lab'" in printed
+			//di "`printed'"
+			// if the header is not orinted add row for varheader
+			if !`print' {
+				// add header row with varname of factor variable
+				putdocx table esttable(`rowMSWord',.), addrows(1)
+				local ++rowMSWord
+				putdocx table esttable(`rowMSWord',1) = ("`label'"), bold font(Garamond, 11) halign(left)
+				local printed "`printed' `lab'" //add varname to list of printed headers
+			}
+			// print row with params for factor-level
+				putdocx table esttable(`rowMSWord',.), addrows(1)
+				local ++rowMSWord
+				putdocx table esttable(`rowMSWord',1) = ("`vlab'"), italic font(Garamond, 10) halign(center)
+				
+				//loop over columns of frame and set cell values of table for continious
+				forvalues col=2/`totcols' {
+					local estnum= `col'-1
+					local estname: word `estnum' of `estnames'
+					putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']),	bold font(Garamond, 10) halign(left)		
+					}
+				
+			
+		}
+		else if "`type'"=="continious" | "`type'"=="continious-interaction" | "`type'"=="const" {
+			//di "continious: `label'"
+			putdocx table esttable(`rowMSWord',.), addrows(1)
+			local ++rowMSWord
+			putdocx table esttable(`rowMSWord',1) = ("`label'"), bold font(Garamond, 11) halign(left)
+			//loop over columns of frame and set cell values of table for continious
+			forvalues col=2/`totcols' {
 				local estnum= `col'-1
 				local estname: word `estnum' of `estnames'
-				putdocx table esttable(`rowtab',`col') = (`estname'[`rowframe']),	bold font(Garamond, 10) halign(left)
-				
-			}
-
-}
+				putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), ///
+				bold font(Garamond, 10) halign(left)
+				}
+		}
+	}
 
 
 /*	
@@ -325,8 +353,8 @@ forvalues rowframe= 1(1)`rows' {
 	/**************************************************************************/
 	/** Garbage collection             **/
 	/**************************************************************************/
+**# Bookmark #5
 	//matrix drop _all
-	
     return local orgframe "`datafr'"
 end
 
@@ -842,7 +870,8 @@ class estdocxtable {
 		//public vars
 		class     model colvector models
 		class     parameter colvector parvect
-		string    colvector levels                // uniq ordered list of pramameters
+
+		string    colvector levels                // uniq ordered list of levels
 		string    colvector terms                 // colvector with unique set of terms in all models
 		string    colvector keep                  // terms to keep in the table and their ordering
 		string    scalar    fname                 // framename used to store the table
@@ -1052,7 +1081,6 @@ class estdocxtable {
 	Function writes paramters for all estnames to display frame
 	****************************************************************************/
 	void estdocxtable::create_display_frame(| string scalar fname) {
-//# Bookmark #3
 		string matrix table
 		string colvector frames
 		string scalar colwidh, paramtext
@@ -1063,7 +1091,7 @@ class estdocxtable {
 	
 		frames= st_framedir()
 		
-		//check if htere is a freame in memory with the same name as this.fname
+		//check if there is a frame in memory with the same name as this.fname
 		//and drop it from memory if there is
 		for (i=1; i<=length(frames); i++) {
 			if(frames[i]==this.fname) {
@@ -1081,7 +1109,6 @@ class estdocxtable {
 		colwidh= "str" + strofreal(mpl) // stringfomrat mpl number of characthers
 		// add column for paramters with a widh/characthers of the longest parameter
 		varindex= st_addvar(colwidh, "params")
-//# Bookmark #1
 		varindex= st_addvar(colwidh, "type")
 		varindex= st_addvar(colwidh, "label")
 		varindex= st_addvar(colwidh, "vlab")
@@ -1255,10 +1282,13 @@ void create_frame_table(`SS' estnames,
 		                ) {
 	//declare function objects, structures and variables						
 	class estdocxtable scalar table
-	
+	string scalar orgframe
 	//print_opts(estnames, keep, bfmt, ci, star, baselevels, nopval, eform, fname)
 	
-	// set set all table propreties to default values values
+	// if program ha been run prior to running with the option fname current frame will
+	// not be the dataframe used to run the estimates but viewframe and routine will not before
+	// able to read varaible properties for the models r(orgframe) will not be null => Swith to  
+	
 
 	// I need to set up all the options in the setup function for teh class to work
 	table.setup(estnames,
