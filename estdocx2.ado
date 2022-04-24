@@ -35,7 +35,7 @@
 /*###############################################################################################*/
 	/*########################################################################*/
 	program check_stats
-		version 15.1
+		version 17
 		syntax anything(name=statlist id="Statistics"), allowed(string)
 		
 		foreach stat in `statlist' {
@@ -52,7 +52,7 @@
 	end
 	/*########################################################################*/
 	program create_docx
-		version 15.1
+		version 17
 		syntax , pagesize(string) [landscape]
 	
 		/**************************************************************************/
@@ -66,7 +66,7 @@
 	end
 	/*########################################################################*/
 	program create_table
-		version 15.1
+		version 17
 		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
 		
 		/**************************************************************************/
@@ -115,11 +115,42 @@
 			
 			
 	end
+	/*########################################################################*/
+	program print_factor_header
+		version 17
+		
+		
+
+	end
+	/*########################################################################*/
+**# Bookmark #1
+	program print_parameter
+		version 17
+	
+	
+		putdocx table esttable(`rowMSWord',.), addrows(1, after) // add a row to the table
+
+		// increment rowtab to index of added row
+		local ++rowMSWord
+	
+		//set the row header to label of variable for continious, _const, free
+		putdocx table esttable(`rowMSWord',1) = ("`label'"), font(Garamond, 10) halign(center)
+		
+		//loop over columns of frame and set cell values of table
+		forvalues col=2/`totcols' {
+					local estnum= `col'-1
+					local estname: word `estnum' of `estnames'
+					putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), bold font(Garamond, 10) halign(left)
+					
+				}
+		
+
+	end
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
-program estdocx
-	version 15.1
+program estdocx, rclass
+	version 17
   
 	syntax namelist(min=1),	///
 		[saving(string)] ///
@@ -192,7 +223,7 @@ program estdocx
 	if ("`stats'"=="none") local stats "" // set stat null string if stat(none)
 	
 	//find out the name of the current frame used to search for labels and vlables
-	frame pwf
+	qui frame pwf
 	local datafr= r(currentframe)
 	
 
@@ -209,9 +240,14 @@ program estdocx
 							 "`fname'",      ///
 							  "`keep'")
 	
-
+	
+	//find out the name of the frame holding the regression table
+	//after mata routines the active frame will be the one holding the regression table
+	qui frame pwf
+	local tabfr= r(currentframe)
+	
 	/**************************************************************************/
-	/** CREATE TABLE                     **/
+	/** CREATE WORDTABLE                     **/
 	/**************************************************************************/
 	// if !inline first create docx in memory to hold the table
 	if("`inline'"=="") create_docx , pagesize(`pagesize') `landscape'
@@ -225,7 +261,7 @@ program estdocx
 		local totcols= `nummodels' +1
 	
 	create_table `estnames', pagesize(`pagesize') title(`title') `landscape' 
-	putdocx describe esttable
+	
 	
 	// set border on bottom of header row of table
 	putdocx table esttable(1,.), border(bottom)
@@ -290,7 +326,8 @@ forvalues rowframe= 1(1)`rows' {
 	/** Garbage collection             **/
 	/**************************************************************************/
 	//matrix drop _all
-
+	
+    return local orgframe "`datafr'"
 end
 
 version 17
@@ -541,7 +578,7 @@ class model {
 		`RS'             get_ll()           // returns lower bound of ci as real for a given level
 		`RS'             get_ul()           // returns upper bound of ci as real for a given level
 		`boolean' scalar get_base()         // returns boolean==TRUE if level is a base
-		`boolean' scalar get_intr()         // returns boolean==TRUE if level is a base
+		`boolean' scalar get_intr()         // returns boolean==TRUE if level is a interaction
 		`boolean' scalar get_eform()        // returns boolean==TRUE if level is in eform
 		
 	private:
@@ -1201,7 +1238,7 @@ void create_frame_table(`SS' estnames,
 	//declare function objects, structures and variables						
 	class estdocxtable scalar table
 	
-	print_opts(estnames, keep, bfmt, ci, star, baselevels, nopval, eform, fname)
+	//print_opts(estnames, keep, bfmt, ci, star, baselevels, nopval, eform, fname)
 	
 	// set set all table propreties to default values values
 

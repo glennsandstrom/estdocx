@@ -117,7 +117,6 @@
 	  
 		syntax namelist(min=1),	///
 		[keep(string)]
-**# Bookmark #2
 		
 		local models= "`namelist'" //space sparated list of estimates
 			
