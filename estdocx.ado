@@ -48,9 +48,6 @@
 /**SUB-ROUTINES  **/
 /**************************************************************************/
 	/*########################################################################*/
-	//capture program drop create_docx
-		
-**# Bookmark #2
 	program create_docx
 		version 15.1
 		syntax [namelist(name=models)], pagesize(string) [landscape]
@@ -64,7 +61,7 @@
 			else putdocx begin, pagesize(`pagesize')
 			
 	end
-	
+	/*########################################################################*/
 	program create_table
 		version 15.1
 		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
@@ -115,7 +112,6 @@
 			}
 	end
 	/*########################################################################*/
-	//capture program drop get_models
 	program get_models, rclass
 	version 15.1
 	  
@@ -170,7 +166,6 @@
 		
 	end
 	/*########################################################################*/
-	//capture program drop write_continious
 	program write_continious
 		version 15.1
 		syntax namelist(min=1), ///
@@ -231,7 +226,6 @@
 			
 	end
 	/*########################################################################*/	
-	//capture program drop write_level
 	program write_level
 		version 15.1
 		syntax namelist(min=1), ///
@@ -292,7 +286,6 @@
 		}	
 	end
 	/*########################################################################*/	
-	//capture program drop write_legend
 	program write_legend
 		version 15.1
 		syntax, star(string) row(integer) col(integer)
@@ -439,14 +432,9 @@
 			}
 		}
 	end
-	/*########################################################################*/
-	
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
-
-//capture program drop estdocx
-
 program estdocx
 	version 15.1
   
@@ -605,6 +593,9 @@ mata:
 /*###############################################################################################*/
 // STRUCTURES
 /*###############################################################################################*/
+/**************************************************************************/
+/** Structure PARAMVAR                     **/
+/**************************************************************************/
 struct paramvar {
 		string scalar vartype
 		string scalar varname
@@ -617,9 +608,23 @@ struct paramvar {
 
 
 }
+
+/**************************************************************************/
+/** Structure MODEL                     **/
+/**************************************************************************/
+struct model {
+	real matrix rtable
+	string vector params, stats
+
+
+}
+
 /*###############################################################################################*/
 // CLASSES
 /*###############################################################################################*/
+/**************************************************************************/
+// CLASS parameter
+/**************************************************************************/
 class parameter {
 	public:
 		string scalar paramtype		// type of paramter.. continious, factor, interaction
@@ -640,168 +645,267 @@ class parameter {
 	
 		
 }
-
-void parameter::setup(string scalar user_txt) {
-	real scalar i
-	struct paramvar scalar P
-	
-	//make sure all propreties are null when setup is run
-	this.comblabel= this.combvlab = this.paramtype = this.paramtxt = ""
-	this.interaction= .
-	
-	
-	this.paramtxt= user_txt // text defining the complete paramteter
-	
-	//check if parameter is an interaction
-	this.interaction= strrpos(this.paramtxt,"#")  > 0
-	
-	if (this.interaction) {
-		//"do complicated things for interaction paramters"
-		this.intervars=tokens(subinstr(this.paramtxt, "#", " ") ) //matrix with varnames forming the interaction
-		
-		// fill colvector this.vars with strcutures for each varaible in interaction stored in intervars
-		// set this vars to a new vector of struct paramvars of length= this.intervars
-		this.vars = paramvar(length(this.intervars)) 
-				
-		for (i=1; i<=length(this.intervars); i++) {
-			P= this.parsevar(this.intervars[i]) //create struct paramvar using string in this.intervars
-			this.vars[i]= P // add struct to vector this.vars
-		
-		}
-		
-		// form the combined label and value-label for the interaction
-		// intercations containing at least one factor should have vlab
-		
-		for (i=1; i<=length(this.vars); i++) {
-						
-			if (i > 1) this.comblabel= this.comblabel + " * " + this.vars[i].label
-			else this.comblabel= this.vars[i].label
-			
-			// if vlab is null do nothing
-			// if vlab !null and comb !null add "*" + vlab to comb
-			// if vlab !null and comb null add vlab to comb
-			if (this.combvlab=="" & this.vars[i].vlab!="") {
-				this.combvlab= this.vars[i].vlab
-			}
-			else if(this.combvlab!="" & this.vars[i].vlab!="") {
-				this.combvlab= this.combvlab + " * " + this.vars[i].vlab
-			}
-			else {
-				// do nothing
-			}
-			
-		
-		}
-		//check if any of the incuded variables are factors this.combvlab will not be null
-		if(this.combvlab=="") this.paramtype= "continious-interaction"
-		else this.paramtype= "factor-interaction"
-	
-	}
-	else {
-		//"do easy things for factors and continious variables"
-		//create a single element vector with one paramvar struct
-		this.vars = paramvar(1) 
-		this.vars= this.parsevar(this.paramtxt)
-		this.comblabel= this.vars[1].label
-		this.combvlab= this.vars[1].vlab
-		this.paramtype= this.vars[1].vartype
-	}
-}
-
-struct paramvar parameter::parsevar(string scalar vartext){
+	void parameter::setup(string scalar user_txt) {
+		real scalar i
 		struct paramvar scalar P
-		real scalar rcode
-		string scalar cmd
+		
+		//make sure all propreties are null when setup is run
+		this.comblabel= this.combvlab = this.paramtype = this.paramtxt = ""
+		this.interaction= .
 		
 		
-		// assign the part of the string efter . to P.varname 
-		P.varname= substr(vartext , strrpos(vartext,".")+1 ,  strlen(vartext))
+		this.paramtxt= user_txt // text defining the complete paramteter
 		
-		// assign part of string before . to P.prefix
-		P.prefix= substr(vartext , 1 , strrpos(vartext,".")-1 )
+		//check if parameter is an interaction
+		this.interaction= strrpos(this.paramtxt,"#")  > 0
 		
-		//check that P.varname is a varaible in the dataset
-		cmd= "confirm variable " + P.varname
-		//function will return non-zero (error=111) if varname does not exist
-		// set type and name and then exit
-		if (_stata(cmd, 1)) {
-			P.vartype= "const"
-			P.label= P.varname
-			return(P)
-		
-		}
-		
-		//check if prefix contains numeric character then it is a factor
-		if (regexm(P.prefix, "[0-9]")) {
+		if (this.interaction) {
+			//"do complicated things for interaction paramters"
+			this.intervars=tokens(subinstr(this.paramtxt, "#", " ") ) //matrix with varnames forming the interaction
 			
-			P.vartype= "factor"
+			// fill colvector this.vars with strcutures for each varaible in interaction stored in intervars
+			// set this vars to a new vector of struct paramvars of length= this.intervars
+			this.vars = paramvar(length(this.intervars)) 
+					
+			for (i=1; i<=length(this.intervars); i++) {
+				P= this.parsevar(this.intervars[i]) //create struct paramvar using string in this.intervars
+				this.vars[i]= P // add struct to vector this.vars
 			
-			// check if prefix is base
-			P.base= strrpos(P.prefix,"b")  > 0
+			}
 			
-			// check if prefix is ommitted
-			P.omitted= strrpos(P.prefix,"o")  > 0
-
-			//get only the numeric value in prefix if it contains letters to get valuelabel with st_varvaluelabel()
-			// match the numbers with regexm and tehn return them with regexs
-			if (regexm(P.prefix, "[0-9]+"))	P.level= regexs(0)
-		
+			// form the combined label and value-label for the interaction
+			// intercations containing at least one factor should have vlab
 			
-			// check that value labels are set and set vlab to correct value label in P.vlab 
-			if (st_varvaluelabel(P.varname)!="") P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
-			else P.vlab = P.level
+			for (i=1; i<=length(this.vars); i++) {
+							
+				if (i > 1) this.comblabel= this.comblabel + " * " + this.vars[i].label
+				else this.comblabel= this.vars[i].label
+				
+				// if vlab is null do nothing
+				// if vlab !null and comb !null add "*" + vlab to comb
+				// if vlab !null and comb null add vlab to comb
+				if (this.combvlab=="" & this.vars[i].vlab!="") {
+					this.combvlab= this.vars[i].vlab
+				}
+				else if(this.combvlab!="" & this.vars[i].vlab!="") {
+					this.combvlab= this.combvlab + " * " + this.vars[i].vlab
+				}
+				else {
+					// do nothing
+				}
+				
 			
-			// sometimes the value lable is set but is null string => set to level of factor
-			if (P.vlab=="") P.vlab = P.level
-		}
-		else if (P.prefix=="" | P.prefix=="c" | P.prefix=="co") {
-			P.vlab= "" // paramter is not factor vlab should be null
-			P.vartype= "continious"
-			
-			//contionios variables haver no base-level
-			P.base= 0
-			
-			// check if paramter is omitted 
-			P.omitted= strrpos(P.prefix,"o") > 0
+			}
+			//check if any of the incuded variables are factors this.combvlab will not be null
+			if(this.combvlab=="") this.paramtype= "continious-interaction"
+			else this.paramtype= "factor-interaction"
 		
 		}
 		else {
-			_error(3300, "Parameter contains an non implemented value(s)")
+			//"do easy things for factors and continious variables"
+			//create a single element vector with one paramvar struct
+			this.vars = paramvar(1) 
+			this.vars= this.parsevar(this.paramtxt)
+			this.comblabel= this.vars[1].label
+			this.combvlab= this.vars[1].vlab
+			this.paramtype= this.vars[1].vartype
 		}
-		
-		// check that a varlabel is set else return varname in P.label
-		if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
-		else P.label= P.varname
-		
-		return(P)
-}
-
-void parameter::print() {
-	real scalar i
-		printf("{txt}___________________________________________________________\n")
-	for(i=1; i<=length(this.vars); i++) {
-		
-		
-		printf("{txt}---Structure: %f ---------------------------------\n", i)
-		printf("{txt}vartype is:{result} %s\n", this.vars[i].vartype)
-		printf("{txt}varname is:{result} %s\n", this.vars[i].varname)
-		printf("{txt}label is:{result} %s\n", this.vars[i].label)
-		printf("{txt}vlab is:{result} %s\n", this.vars[i].vlab)
-		printf("{txt}prefix is:{result} %s\n", this.vars[i].prefix)
-		printf("{txt}level is:{result} %s\n", this.vars[i].level)
-		printf("{txt}base is:{result} %f\n", this.vars[i].base)
-		printf("{txt}omitted is:{result} %f\n", this.vars[i].omitted)
 	}
+	struct paramvar parameter::parsevar(string scalar vartext){
+			struct paramvar scalar P
+			real scalar rcode
+			string scalar cmd
+			
+			
+			// assign the part of the string efter . to P.varname 
+			P.varname= substr(vartext , strrpos(vartext,".")+1 ,  strlen(vartext))
+			
+			// assign part of string before . to P.prefix
+			P.prefix= substr(vartext , 1 , strrpos(vartext,".")-1 )
+			
+			//check that P.varname is a varaible in the dataset
+			cmd= "confirm variable " + P.varname
+			//function will return non-zero (error=111) if varname does not exist
+			// set type and name and then exit
+			if (_stata(cmd, 1)) {
+				P.vartype= "const"
+				P.label= P.varname
+				return(P)
+			
+			}
+			
+			//check if prefix contains numeric character then it is a factor
+			if (regexm(P.prefix, "[0-9]")) {
+				
+				P.vartype= "factor"
+				
+				// check if prefix is base
+				P.base= strrpos(P.prefix,"b")  > 0
+				
+				// check if prefix is ommitted
+				P.omitted= strrpos(P.prefix,"o")  > 0
 
-		printf("{txt}--- Object: --------------------------------------\n")
-		printf("{txt}paramtxt is:{result} %s\n", this.paramtxt)
-		printf("{txt}paramtype is:{result} %s\n", this.paramtype)
-		printf("{txt}comblabel is:{result} %s\n", this.comblabel)
-		printf("{txt}combvlab is:{result} %s\n", this.combvlab)
-		printf("{txt}interaction is:{result} %f\n", this.interaction)
-		printf("{txt}___________________________________________________________\n")
+				//get only the numeric value in prefix if it contains letters to get valuelabel with st_varvaluelabel()
+				// match the numbers with regexm and tehn return them with regexs
+				if (regexm(P.prefix, "[0-9]+"))	P.level= regexs(0)
+			
+				
+				// check that value labels are set and set vlab to correct value label in P.vlab 
+				if (st_varvaluelabel(P.varname)!="") P.vlab = st_vlmap(st_varvaluelabel(P.varname), strtoreal(P.level))
+				else P.vlab = P.level
+				
+				// sometimes the value lable is set but is null string => set to level of factor
+				if (P.vlab=="") P.vlab = P.level
+			}
+			else if (P.prefix=="" | P.prefix=="c" | P.prefix=="co") {
+				P.vlab= "" // paramter is not factor vlab should be null
+				P.vartype= "continious"
+				
+				//contionios variables haver no base-level
+				P.base= 0
+				
+				// check if paramter is omitted 
+				P.omitted= strrpos(P.prefix,"o") > 0
+			
+			}
+			else {
+				_error(3300, "Parameter contains an non implemented value(s)")
+			}
+			
+			// check that a varlabel is set else return varname in P.label
+			if (st_varlabel(P.varname)!="") P.label= st_varlabel(P.varname)
+			else P.label= P.varname
+			
+			return(P)
+	}
+	void parameter::print() {
+		real scalar i
+			printf("{txt}___________________________________________________________\n")
+		for(i=1; i<=length(this.vars); i++) {
+			
+			
+			printf("{txt}---Structure: %f ---------------------------------\n", i)
+			printf("{txt}vartype is:{result} %s\n", this.vars[i].vartype)
+			printf("{txt}varname is:{result} %s\n", this.vars[i].varname)
+			printf("{txt}label is:{result} %s\n", this.vars[i].label)
+			printf("{txt}vlab is:{result} %s\n", this.vars[i].vlab)
+			printf("{txt}prefix is:{result} %s\n", this.vars[i].prefix)
+			printf("{txt}level is:{result} %s\n", this.vars[i].level)
+			printf("{txt}base is:{result} %f\n", this.vars[i].base)
+			printf("{txt}omitted is:{result} %f\n", this.vars[i].omitted)
+		}
+
+			printf("{txt}--- Object: --------------------------------------\n")
+			printf("{txt}paramtxt is:{result} %s\n", this.paramtxt)
+			printf("{txt}paramtype is:{result} %s\n", this.paramtype)
+			printf("{txt}comblabel is:{result} %s\n", this.comblabel)
+			printf("{txt}combvlab is:{result} %s\n", this.combvlab)
+			printf("{txt}interaction is:{result} %f\n", this.interaction)
+			printf("{txt}___________________________________________________________\n")
+	}
+/**************************************************************************/
+// CLASS rowvarlist
+/**************************************************************************/
+class rowvarlist {
+	public:
+		//public vars
+		string colvector unique
+		string colvector uvarnames
+		string colvector constants
+		
+		//public functions
+		void setup() // setup takes a namlist of stored estimates
+		void print()
+		
+	
+	private:
+		//private vars
+		
+		
+		//private functions
+		string colvector get_uniqvarnames()
+		
+	
+	
+	
+	
 }
+	/*########################################################################
+	// CLASS rowvarlist FUNCTIONS
+	########################################################################*/
+	/***************************************************************************
+	Function takes a vector of all paramters in all models and returns the unique
+	list of pramameters with all duplicates removed => function as the rows
+	of the regression table
+	****************************************************************************/
+	void rowvarlist::setup(string colvector allparams) {
 
+	real scalar i, ii, found
+	string scalar param, varname, prefix, find
+		
+		//declare colvector allvars
+		this.constants= J(0, 1, "")
+		
+		// get the unique set of varnames in models with prefix stripped
+		this.uvarnames= get_uniqvarnames(allparams)
+		
+		for (i=1; i<=length(this.uvarnames); i++) {
+			// check if varname is a constant or free and at it to constants if not already there
+			if(regexm(this.uvarnames[i], "^[_/]") & !anyof(this.constants, this.uvarnames[i])) this.constants=this.constants\this.uvarnames[i]
+					
+			find= "[0-9]*[obc]*\." + this.uvarnames[i] 
+			//loop over complete list of parameters
+			for (ii=1; ii<=length(allparams); ii++) {
+				// check if the varname match find and it it to unique if not already there
+				if(regexm(allparams[ii], find) & !anyof(this.unique, allparams[ii])) {
+					//printf("{txt}pattern: {res}%s {txt}mathed to: {res}%s\n", find, allparams[ii])
+					this.unique= this.unique\allparams[ii]
+				}
+			}
+			
+		}
+
+		
+		// add the unique set of constants/ancilliary parameters to the end of the rowvarlist
+		this.unique= this.unique\this.constants
+		
+	}
+	/***************************************************************************
+	Function takes of all paramters in all models and returns the unique varnames
+	found in the list of complete stack of paramters
+	****************************************************************************/
+	string colvector rowvarlist::get_uniqvarnames(allparams) {
+
+	string colvector allvarnames, uvarnames
+	string scalar param, vars, var
+	real scalar i, ii
+
+		allvarnames= J(0, 1, "")
+		
+			// remove numbers and letters before up until and including .
+			for (i=1; i<=length(allparams); i++) {
+				param= allparams[i,1]
+				// for each mach of prefix remove it until non are left
+				while(regexm(param, "[0-9]*[obc]*\.")) param= regexr(param, "[0-9]*[obc]*\.", "")
+				//split by # into vector of varnames in the parameter
+				vars= tokens(param, "#")
+				for (ii=1; ii<=length(vars); ii++) {
+					// add the var to varnames with the prefix removed
+					if(vars[ii]!="#") allvarnames= allvarnames\vars[ii]
+				}
+			}
+			
+			// remove all duplicate varnames
+			uvarnames= J(0, 1, "")
+			for (i=1; i<=length(allvarnames); i++) {
+				var= allvarnames[i,1]
+				// check if cof is already in uvarnames and add it if it is not
+				if(!anyof(uvarnames, var)) uvarnames= uvarnames\var
+			}
+			
+			return(uvarnames)
+					
+	}
 
 /*###########################################################################################*/
 // FUNCTIONS
@@ -1042,8 +1146,8 @@ void models_varlist(string scalar models, |string scalar cofkeep){
 	//"uniqrows is:"
 	//test= uniqrows(allvars) 
 	//test
-	//"uniqe is:"
-	//unique
+	"uniqe is:"
+	unique
 	
 	
 	//IMPLEMENT KEEP OPTION HERE
