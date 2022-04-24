@@ -555,7 +555,6 @@ class parameter {
 	}
 /*#######################################################################################*/
 // CLASS model
-//# Bookmark #5
 /*#######################################################################################*/
 class model {
 	public:
@@ -615,7 +614,7 @@ class model {
 		statistics= statistics[.,2] 		//remove first col that is all missing
 		parameters= parameters[.,2] 		//remove first col that is all missing
 		
-		set_levels()        //set the string vector levels contining pramters with base/omitted stripped
+		set_levels()        //set the string vector levels contining paramters with base/omitted stripped
 		set_interactions()  //set the boolean vector indicating if parameter/level is an interaction
 		set_base()          //set the boolean vector indicating if parameter/level is base/omitted
 		set_constfree()     //set the boolean vector indicating if parameter/level is _const or free
@@ -837,12 +836,12 @@ class model {
 	}	
 /*#######################################################################################*/
 // CLASS estdocxtable
-//# Bookmark #3
 /*#######################################################################################*/
 class estdocxtable {
 	public:
 		//public vars
 		class     model colvector models
+		class     parameter colvector parvect
 		string    colvector levels                // uniq ordered list of pramameters
 		string    colvector terms                 // colvector with unique set of terms in all models
 		string    colvector keep                  // terms to keep in the table and their ordering
@@ -869,6 +868,7 @@ class estdocxtable {
 		void   set_ulevels()             // computes the uniq ordered list of levels that form the rows of table
 		void   set_terms()               // computes the uniq ordered list of terms
 		void   set_keep()                // computes the uniq ordered list of levels that form the rows of table
+		
 		void   create_display()
 		`SS'   get_beta()
 		`SS'   get_pvalue()
@@ -975,6 +975,17 @@ class estdocxtable {
 		// if keep is passed limit and order this.levels according to the supplied list of levels\constants
 		if(length(this.keep)) this.set_keep()
 		
+		// create a vector of parameter objects for the unique set of levels\constants
+		//return colvector parameters objects
+		parvect= parameter(length(this.levels))
+		
+		// run setup of model objects for estnames
+		for (i=1; i<=length(this.levels); i++) {
+			parvect[i].setup(this.levels[i])
+			//parvect[i].print()
+		}
+		
+		
 	}
 	/***************************************************************************
 	Function takes a vector of model objects models and returns the unique
@@ -1041,17 +1052,19 @@ class estdocxtable {
 	Function writes paramters for all estnames to display frame
 	****************************************************************************/
 	void estdocxtable::create_display_frame(| string scalar fname) {
+//# Bookmark #3
 		string matrix table
 		string colvector frames
 		string scalar colwidh, paramtext
-		real scalar i, ii, mpl, c, varindex
-		
+		real   scalar i, ii, mpl, c, varindex
 
 		if(fname=="" ) this.fname= st_tempname()
 		else this.fname= fname
 	
 		frames= st_framedir()
 		
+		//check if htere is a freame in memory with the same name as this.fname
+		//and drop it from memory if there is
 		for (i=1; i<=length(frames); i++) {
 			if(frames[i]==this.fname) {
 				st_framecurrent("default")
@@ -1059,18 +1072,20 @@ class estdocxtable {
 			}
 		}
 		
+		//create the frame for the table and switch to frame
 		st_framecreate(this.fname)
 		st_framecurrent(this.fname)
-		
-		//remove base and omitted from interaction paramteters if baselevels is FALSE
-		//if(!this.baselevels) remove_baselevels()
-
-		
-		//find maximum number of characthers of in parameters
+				
+		//find maximum number of characthers in parameters
 		mpl=max(strlen(this.levels))
 		colwidh= "str" + strofreal(mpl) // stringfomrat mpl number of characthers
 		// add column for paramters with a widh/characthers of the longest parameter
 		varindex= st_addvar(colwidh, "params")
+//# Bookmark #1
+		varindex= st_addvar(colwidh, "type")
+		varindex= st_addvar(colwidh, "label")
+		varindex= st_addvar(colwidh, "vlab")
+	
 		
 		// add columns for for each model
 		for (i=1; i<=length(this.estnames); i++) {
@@ -1087,11 +1102,14 @@ class estdocxtable {
 		for (i=1; i<=length(this.levels); i++) {
 			// write full parameter text to row header
 			table[i,1]= this.levels[i]
-			
+			// måste skapa vector med param-object innan jag är i view-frame
+			table[i,2]= this.parvect[i].paramtype
+			table[i,3]= this.parvect[i].comblabel
+			table[i,4]= this.parvect[i].combvlab
 			
 			// get stats for each model and form the celltext
 			for (ii=1; ii<=length(this.models); ii++) {
-				c= ii+1
+				c= ii+4
 				
 				
 				//always get beta
