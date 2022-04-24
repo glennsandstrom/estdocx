@@ -1,4 +1,4 @@
-v 0.92
+v 0.94
 * lines starting with * are comments; they are ignored
 * blank lines are ignored, too
 * v indicates version—specify v 3, which is the current version of .toc files

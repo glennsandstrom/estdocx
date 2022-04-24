@@ -1,4 +1,4 @@
-# estdocx v. 0.92
+# estdocx v. 0.94
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
@@ -60,7 +60,7 @@ inline            | Add table to a docx in memory rather than saving to standalo
 title(string)     | Optional title for table.
 b(%fmt)           | Stata format used for coefficients. Default is %9.2f
 star(numlist)     | Numlist of significance levels. If option is omitted significance is reported numerically.
-nop               | Do not report significance levels.
+nopval            | Do not report significance levels.
 ci(%fmt)          | Stata format used for 95% confidence intervals. If option is omitted no CIs are not reported.
 stats(scalarlist) | Report scalarlist in table. Allowed is N aic bic
 baselevels        | Include all baselevels.

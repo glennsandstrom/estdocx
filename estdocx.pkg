@@ -12,9 +12,9 @@ d KW: putdocx
 d KW: Litterate programming
 d KW: MS Word
 d
-d Requires: Stata version 15 
+d Requires: Stata version 17 
 d
-d Distribution-Date: 20220217
+d Distribution-Date: 20220424
 d
 d Author: Glenn Sandström
 d Support: email glenn.sandstrom@umu.se

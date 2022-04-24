@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 0.92 20220217 }{...}
-{right:version 1.0}
+{* *! version 0.94 20220217 }{...}
+{right:version 0.94}
 {title:Title}
 {phang}
 {bf:estdocx} {hline 2} a command giving same functionality as estimates table 
@@ -65,7 +65,7 @@ to a table using the command {cmd:putdocx} avaliable since Stata v.15 i.e. putdo
 {opt star(numlist .05 .01 .001)} significance levels. If option is not set p-values are printed within parentheses with three decimal places. Significance levels can be fully excluded if options {opt nop} is passed.
 
 {phang}
-{opt nop} Do not report significance levels, used if you e.g. only want to show CIs.
+{opt nopval} Do not report significance levels, used if you e.g. only want to show CIs.
 
 {phang}
 {opt ci(%fmt)} Stata format used for 95% confidence intervals. If option is omitted no CIs are not reported.
