@@ -116,35 +116,136 @@
 			
 	end
 	/*########################################################################*/
-	program print_factor_header
-		version 17
+	program write_legend
+		version 15.1
+		syntax, star(string) row(integer) col(integer)
 		
+		local sigs: word count `star'
+		local text "legend: "
 		
-
+		forvalues sig=1/`sigs' {
+			local p: word `sig' of `star' //.05
+			local s= "`s'*"
+			local text=  "`text' `s' p<" + "`p'; "  
+		
+		}
+		putdocx table esttable(`row',.), addrows(1)
+		local row= `row'+1
+		putdocx table esttable(`row',1) = ("`text'"), ///
+		font(Garamond, 11) halign(left) colspan(`col') ///
+		border(bottom, nil) ///
+		border(top)
+	end
+/*########################################################################*/	
+	program write_stats
+		version 15.1
+		syntax namelist(min=1), stats(string) row(integer)
+		//di "MODELS: `namelist'"
+		//di "STATS: `stats'"
+		//di "ROW: `row'"
+		
+		local models= "`namelist'" //space sparated list of estimates
+			
+		foreach stat in `stats' {
+			//add row for stat
+			putdocx table esttable(`row',.), addrows(1)
+			local ++row
+			putdocx table esttable(`row',1) = ("`stat'"), font(Garamond, 11) halign(left) bold
+			
+			// get matrix of stat for each model
+			get_`stat' `models'
+			matrix S= r(S)
+			local col= 2
+			
+			foreach mod in `models' {
+				if ("`stat'"!="N") {
+					local text: display %-12.1f S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+					local text= subinstr("`text'"," ","", .)
+				}
+				else {
+					local text: display %-12.0gc  S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
+				}
+				putdocx table esttable(`row',`col') = ("`text'"), font(Garamond, 11) halign(left)			
+				local ++col
+			}
+		}		
+		
+	
 	end
 	/*########################################################################*/
-	program print_parameter
-		version 17
-	
-	
-		putdocx table esttable(`rowMSWord',.), addrows(1, after) // add a row to the table
-
-		// increment rowtab to index of added row
-		local ++rowMSWord
-	
-		//set the row header to label of variable for continious, _const, free
-		putdocx table esttable(`rowMSWord',1) = ("`label'"), font(Garamond, 10) halign(center)
+	program get_N, rclass
+		version 15.1
+		syntax namelist(min=1)
 		
-		//loop over columns of frame and set cell values of table
-		forvalues col=2/`totcols' {
-					local estnum= `col'-1
-					local estname: word `estnum' of `estnames'
-					putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), bold font(Garamond, 10) halign(left)
-					
-				}
+		local models= "`namelist'" //space sparated list of estimates
 		
+		//create a matrix for storing statistics
+		local nummods: list sizeof models
+		matrix Y= J(1,`nummods', .)
+		matrix colnames Y = `models'
+		matrix rownames Y = N
+		
+		//loop over models and get each statistic in stats and store in S
+		foreach model in `models' {
+			//restore model to acces e()
+			qui estimates restore `model'  
+			// store value of statistics specified in arg: stats in matrix S
+			mat Y[rownumb(Y,"N"),colnumb(Y,"`model'")]= e(N)			
+		}
 
+		return matrix S= Y
 	end
+	/*########################################################################*/
+	program get_aic, rclass
+		version 15.1
+		syntax namelist(min=1)
+		
+		local models= "`namelist'" //space sparated list of estimates
+		
+		//create a matrix for storing statistics
+		local nummods: list sizeof models
+		matrix Y= J(1,`nummods', .)
+		matrix colnames Y = `models'
+		matrix rownames Y = aic
+		
+		//loop over models and get each statistic in stats and store in S
+		foreach model in `models' {
+			//restore model to acces e()
+			qui estimates restore `model'  
+			qui estat ic
+			mat Z= r(S)
+			local val= Z[1 ,colnumb(Z,"AIC")]
+			mat Y[rownumb(Y,"aic"),colnumb(Y,"`model'")]= `val'			
+		}
+
+		return matrix S= Y
+	end
+	/*########################################################################*/
+	program get_bic, rclass
+		version 15.1
+		syntax namelist(min=1)
+		
+		local models= "`namelist'" //space sparated list of estimates
+		
+		//create a matrix for storing statistics
+		local nummods: list sizeof models
+		matrix Y= J(1,`nummods', .)
+		matrix colnames Y = `models'
+		matrix rownames Y = bic
+		
+		//loop over models and get each statistic in stats and store in S
+		foreach model in `models' {
+			//restore model to acces e()
+			qui estimates restore `model'  
+			qui estat ic
+			mat Z= r(S)
+			local val= Z[1 ,colnumb(Z,"BIC")]
+			mat Y[rownumb(Y,"bic"),colnumb(Y,"`model'")]= `val'			
+		}
+
+		return matrix S= Y
+	end
+	/*########################################################################*/
 /*###############################################################################################*/
 // MAIN PROGRAM
 /*###############################################################################################*/
@@ -163,13 +264,13 @@ program estdocx, rclass
 		[keep(string)] ///
 		[pagesize(string)] ///
 		[landscape] ///
-		[Nopval] ///
+		[NOPval] ///
 		[eform] ///
 		[fname(string)] 
 		
 		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is off
 		
-
+    di "star_ `star'"
 
 	// set local holding the names of estimates to be reported in table
 	local estnames= "`namelist'" //space separated list of estimates
@@ -270,8 +371,8 @@ program estdocx, rclass
 	/**************************************************************************/
 	/** PRINT THE TABLE FROM FRAME */
 	/**************************************************************************/
-	**# Bookmark #3
-		
+	
+	
 	//read table data from frame 
 	local rows= _N // get the total number of rows in the frame that should be exported to word
 	local rowMSWord= 1 // rowindicator for MSWord table
@@ -311,7 +412,7 @@ program estdocx, rclass
 				forvalues col=2/`totcols' {
 					local estnum= `col'-1
 					local estname: word `estnum' of `estnames'
-					putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']),	bold font(Garamond, 10) halign(left)		
+					putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), font(Garamond, 10) halign(left)		
 					}
 				
 			
@@ -326,24 +427,25 @@ program estdocx, rclass
 				local estnum= `col'-1
 				local estname: word `estnum' of `estnames'
 				putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), ///
-				bold font(Garamond, 10) halign(left)
+				font(Garamond, 10) halign(left)
 				}
 		}
 	}
 
+		// set border at bottom beta table
+	putdocx table esttable(`rowMSWord',.), border(bottom)
 
-/*	
 
 	/**************************************************************************/	
 	// ADD STATS TO BOTTOM OF TABLE IF stats!=null
 	/**************************************************************************/
-	if ("`stats'"!="") write_stats `models', stats(`stats') row(`row')
+	if ("`stats'"!="") write_stats `estnames', stats(`stats') row(`rowMSWord')
 	/**************************************************************************/	
 	// print a legend with significance values
 	/**************************************************************************/
 	qui putdocx describe esttable
-	if("`star'"!="none" & "`nopval'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
-*/	
+	if("`star'"!="" & "`nopval'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
+
 	/**************************************************************************/
 	/** Save worddocument if program is not in inline mode           **/
 	/**************************************************************************/
@@ -353,9 +455,7 @@ program estdocx, rclass
 	/**************************************************************************/
 	/** Garbage collection             **/
 	/**************************************************************************/
-**# Bookmark #5
 	//matrix drop _all
-    return local orgframe "`datafr'"
 end
 
 version 17
