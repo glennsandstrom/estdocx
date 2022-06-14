@@ -621,9 +621,15 @@ class parameter {
 				
 				// check if prefix is ommitted
 				P.omitted= strrpos(P.prefix,"o")  > 0
+				
+				// check if it is bn than it is not base or omitted
+				if(regexm(P.prefix, "bn")) {
+					P.base= `FALSE'
+					P.omitted= `FALSE'
+				}
 
 				//get only the numeric value in prefix if it contains letters to get valuelabel with st_varvaluelabel()
-				// match the numbers with regexm and tehn return them with regexs
+				// match the numbers with regexm and then return them with regexs
 				if (regexm(P.prefix, "[0-9]+"))	P.level= regexs(0)
 			
 				
@@ -633,12 +639,13 @@ class parameter {
 				
 				// sometimes the value lable is set but is null string => set to level of factor
 				if (P.vlab=="") P.vlab = P.level
-			}
+			} 
+			
 			else if (P.prefix=="" | P.prefix=="c" | P.prefix=="co") {
 				P.vlab= "" // paramter is not factor vlab should be null
 				P.vartype= "continious"
 				
-				//contionios variables haver no base-level
+				//contionios variables have no base-level
 				P.base= 0
 				
 				// check if paramter is omitted 
