@@ -887,8 +887,8 @@ class model {
 				for (i=1; i<=length(intervars); i++) {
 					// assign part of string before . to P.prefix
 					prefix= substr(intervars[i] , 1 , strrpos(intervars[i],".")-1 )
-					// increment bases if it is a base or omitted factor
-					if(strrpos(prefix,"b")  > 0 | strrpos(prefix,"o")  > 0) baseom++
+					// increment bases if it is a base or omitted factor but not nobase
+					if((strrpos(prefix,"b")  > 0 | strrpos(prefix,"o") > 0) & !strrpos(prefix,"n")) baseom++
 				}
 				
 				// check if all factors are base or omitted
@@ -1136,14 +1136,15 @@ class estdocxtable {
 		real scalar r
 		string scalar term
 		
-		this.terms= J(length(this.levels), 1, "")
+		
 		
 		for (r=1; r<=length(this.levels); r++) {
 			term= this.levels[r]
-			// remove factor, base, omitted and continious charathers
-			while(regexm(term, "[0-9boc]+\.")) term= regexr(term, "[0-9boc]+\.", ".")
+			// remove factor, base, omitted, nobase and continious charathers
+			while(regexm(term, "[0-9bocn]+\.")) term= regexr(term, "[0-9bocn]+\.", ".")
 			term= subinstr(term, ".", "")
-			this.terms[r]= term
+			
+			if(!anyof(this.terms, term)) this.terms= this.terms\term
 		}
 			
 		
