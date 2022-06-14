@@ -1,9 +1,6 @@
 /**************************************************************************/
 /**TODO  **/
 /**************************************************************************/
-// * Format stats N with tousand number separator i.e. 1,000,000
-//
-//
 // * free-parameters:
 //   Program does not handle multiple equation models such as'
 //   xtlogit with ancilliary/free paramters that should not be transformed. Program needs to honor the 
@@ -20,9 +17,8 @@
 
 // * BUG: if factor has more than single digit level program throws error
 //
-// * BUG: Omitted varaibles are incorrectly displayed as (base)
+// * BUG: Omitted variables are incorrectly displayed as (base)
 
-// * BUG: Varaibles prefixed ibn. for no base-level are inccrectly treated (thiks it is base and does not dispålay in eg. interactions)
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
