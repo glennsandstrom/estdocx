@@ -1412,7 +1412,7 @@ void create_frame_table(`SS' estnames,
 
 	table.create_display_frame(fname)
 
-	table.print()
+	//table.print()
 	
 	
 }
