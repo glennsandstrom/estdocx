@@ -3,8 +3,6 @@
 /**************************************************************************/
 // * Format stats N with tousand number separator i.e. 1,000,000
 //
-// * eform: Implement eform option to transform non exponatisated coefficients...and show ln(coef)
-//   of eform prameters if eform is not passed.
 //
 // * free-parameters:
 //   Program does not handle multiple equation models such as'
@@ -22,10 +20,14 @@
 
 // * BUG: if factor has more than single digit level program throws error
 //
+// * BUG: Omitted varaibles are incorrectly displayed as (base)
+
+// * BUG: Varaibles prefixed ibn. for no base-level are inccrectly treated (thiks it is base and does not dispålay in eg. interactions)
+//
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
 //
-// * Handle stratified variables in cox-regressions
+// * *Indicate stratified variables in cox-regressions
 // 
 // * Implement option to set the titles of models
 //
