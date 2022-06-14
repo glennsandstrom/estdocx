@@ -1,4 +1,4 @@
-# estdocx v. 0.94
+# estdocx v. 0.95
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
