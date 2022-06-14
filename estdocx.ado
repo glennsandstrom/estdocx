@@ -24,8 +24,6 @@
 //   in Demography.
 //
 // * *Indicate stratified variables in cox-regressions
-// 
-// * Implement option to set the titles of models
 //
 // * Implement a possibility to include a note below the regression table e.g. source comment etc.
 /*###############################################################################################*/
@@ -63,6 +61,7 @@
 			
 	end
 	/*########################################################################*/
+**# Bookmark #2
 	program create_table
 		version 17
 		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
@@ -110,6 +109,43 @@
 				putdocx table esttable(1,`col') = ("`model'"),	bold font(Garamond, 11) halign(left)
 				
 			}
+			
+			
+	end
+	/*########################################################################*/
+	program set_headers
+		version 17
+		syntax , headers(string asis) nummod(integer)
+		
+	
+	// get first col to be able to start the loop
+	gettoken col headers : headers, parse(`"" "')
+
+	while(`"`col'"' != "") {
+	
+		confirm integer number `col' 
+		di `"col: `col'"'
+		
+		// confirm that specified col is in te range ofnumod
+		if (`col' < 1 | `col' > `nummod') {
+			di as error "The value: `col' set in option headers() is invalid; column out of range"
+			error 125
+			exit _rc
+			
+		}
+		
+		local col= `col'+1
+		
+		gettoken heading headers : headers, parse(`"" "')
+		di `"heading: `heading'"'
+		
+		// write heading to table
+		putdocx table esttable(1,`col') = ("`heading'"),	bold font(Garamond, 11) halign(left)
+		
+		// get next col
+		gettoken col headers : headers, parse(`"" "')
+		
+		}
 			
 			
 	end
@@ -254,6 +290,7 @@ program estdocx, rclass
 		[saving(string)] ///
 		[inline] ///
 		[title(string)] ///
+		[Headers(string asis)] ///
 		[bfmt(string)] ///
 		[ci(string)] ///
 		[star(string)] ///
@@ -266,9 +303,7 @@ program estdocx, rclass
 		[eform] ///
 		[fname(string)] 
 		
-		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is off
-		
-    di "star_ `star'"
+		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is of
 
 	// set local holding the names of estimates to be reported in table
 	local estnames= "`namelist'" //space separated list of estimates
@@ -282,6 +317,7 @@ program estdocx, rclass
 		di as error "ERROR: `model' is not in the list of stored estimates in memory; check the supplied model names"
 		di _newline  
 		di as result "The estimates currently stored in memory are:" 
+		estimates dir
 		exit _rc
 		}
 			
@@ -359,8 +395,10 @@ program estdocx, rclass
 		// names and factor levels in case var is a factor
 		local totcols= `nummodels' +1
 	
-	create_table `estnames', pagesize(`pagesize') title(`title') `landscape' 
+**# Bookmark #1
+	create_table `estnames', pagesize(`pagesize') title(`title') `landscape'
 	
+	if ("`headers'"!="") set_headers , headers(`headers') nummod(`nummodels')
 	
 	// set border on bottom of header row of table
 	putdocx table esttable(1,.), border(bottom)
@@ -1377,7 +1415,6 @@ class estdocxtable {
 /*###############################################################################################
 // FUNCTIONS CALLED DIRECTLY FROM ADO
 ###############################################################################################*/
-//# Bookmark #2
 
 void create_frame_table(`SS' estnames,
 					  | `SS' baselevels,
