@@ -290,7 +290,7 @@ program estdocx, rclass
 		[saving(string)] ///
 		[inline] ///
 		[title(string)] ///
-		[Headers(string asis)] ///
+		[COlabels(string asis)] ///
 		[bfmt(string)] ///
 		[ci(string)] ///
 		[star(string)] ///
@@ -398,7 +398,7 @@ program estdocx, rclass
 **# Bookmark #1
 	create_table `estnames', pagesize(`pagesize') title(`title') `landscape'
 	
-	if ("`headers'"!="") set_headers , headers(`headers') nummod(`nummodels')
+	if ("`colabels'"!="") set_headers , headers(`headers') nummod(`nummodels')
 	
 	// set border on bottom of header row of table
 	putdocx table esttable(1,.), border(bottom)

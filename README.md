@@ -58,6 +58,9 @@ Options           | Description
 saving(filename)  | Path/filename of the generated docx file.
 inline            | Add table to a docx in memory rather than saving to standalone file.
 title(string)     | Optional title for table.
+colabels(string)  | Optional labels for columns. Supply list of column number # "label"... Default is to
+        label models/columns using the names of the stored estimates used to form the table.
+
 b(%fmt)           | Stata format used for coefficients. Default is %9.2f
 star(numlist)     | Numlist of significance levels. If option is omitted significance is reported numerically.
 nopval            | Do not report significance levels.
@@ -73,7 +76,9 @@ eform             | Report parameters as exp(B).
 
 Description
 ------------
-estdocx takes a namelist of stored estimates and exports this to a publication quality table in MS Word. Although it is possible to export estimates to a table using the command putdocx avaliable since Stata v.15 i.e. putdocx table results =etable and since Stata v.17 through the collect suite of commands both of these options has some drawbacks. The simple built-in method of putdocx causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making it difficult to choose alignment in the cells and the need to erase these characters. estdocx avoid such issues and allows some additional benefits by providing options for the formatting of the resulting table and inclusion of legend etc. collect is a very powerful command but is quite complex and making the desiredtable requires quite a lot of coding. If the desired table is a multicolumn regression table estdocx is a much simpler way to produce the desired table with just one command.
+estdocx takes a namelist of stored estimates and exports this to a publication quality table in MS Word. Although it is possible to export estimates to a table using the command putdocx avaliable since Stata v.15 i.e. putdocx table results =etable and since Stata v.17 through the collect suite of commands both of these options has some drawbacks. The simple built-in method of putdocx causes unwanted formatting issues in the resulting table such as e.g. hidden characters in cells making it difficult to choose alignment in the cells and the need to erase these characters. estdocx avoid such issues and allows some additional benefits by providing options for the formatting of the resulting table and inclusion of legend etc. 
+
+The command etable and collect avaliable in Stata v17 is a very powerful command, but is quite complex and making the desired table requires quite a lot of coding. If the desired table is a multicolumn regression table estdocx is a much simpler way to produce the desired table with just one command.
 
 
 Examples
