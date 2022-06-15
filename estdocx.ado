@@ -116,7 +116,7 @@
 	program set_headers
 		version 17
 		syntax , headers(string asis) nummod(integer)
-		di `"headers: `headers'"'
+		//di `"headers: `headers'"'
 	
 	// get first col to be able to start the loop
 	gettoken col headers : headers, parse(`"" "')
@@ -124,7 +124,7 @@
 	while(`"`col'"' != "") {
 	
 		confirm integer number `col' 
-		di `"col: `col'"'
+		//di `"col: `col'"'
 		
 		// confirm that specified col is in te range ofnumod
 		if (`col' < 1 | `col' > `nummod') {
@@ -137,7 +137,7 @@
 		local col= `col'+1
 		
 		gettoken heading headers : headers, parse(`"" "')
-		di `"heading: `heading'"'
+		//di `"heading: `heading'"'
 		
 		// write heading to table
 		putdocx table esttable(1,`col') = ("`heading'"),	bold font(Garamond, 11) halign(left)
