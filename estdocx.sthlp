@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 0.95 20220614 }{...}
-{right:version 0.95}
+{* *! version 0.96 20220615 }{...}
+{right:version 0.96}
 {title:Title}
 {phang}
 {bf:estdocx} {hline 2} a command giving same functionality as estimates table 
@@ -22,6 +22,7 @@ namelist
 {synopt:{opt saving(filename)}}Path/filename of the generated docx file.{p_end}
 {synopt:{opt inline}}Add table to a docx in memory rather than saving to standalone file.{p_end}
 {synopt:{opt title(string)}}Optional title for table.{p_end}
+{synopt:{opt colabels(string)}}Optional labels for columns.{p_end}
 {synopt:{opt b(%fmt)}}Stata format used for coefficients. Default is %9.2f{p_end}
 {synopt:{opt star(numlist)}}Numlist of significance levels. If option is omitted significance is reported numerically.{p_end}
 {synopt:{opt nop}}Do not report significance levels.{p_end}
@@ -57,6 +58,9 @@ to a table using the command {cmd:putdocx} avaliable since Stata v.15 i.e. putdo
 
 {phang}
 {opt title(string)} Optional title for table.
+
+{phang}
+{opt colabels(string)} Optional labels for columns. Supply list of column number # "label"... Default is to label models/columns using the names of the stored estimates used to form the table. 
 
 {phang}
 {opt b(%fmt)} Specifies how the coefficients are to be displayed. Default is %9.2f
