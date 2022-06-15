@@ -4,11 +4,15 @@
 /Archive/*
 /Tests/*
 
+*.bac
+
 *.ster
 
 *.dta
 
 *.docx
+
+*.mata
 
 test_*
 
