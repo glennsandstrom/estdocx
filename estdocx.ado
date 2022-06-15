@@ -116,7 +116,7 @@
 	program set_headers
 		version 17
 		syntax , headers(string asis) nummod(integer)
-		
+		di `"headers: `headers'"'
 	
 	// get first col to be able to start the loop
 	gettoken col headers : headers, parse(`"" "')
@@ -398,7 +398,7 @@ program estdocx, rclass
 **# Bookmark #1
 	create_table `estnames', pagesize(`pagesize') title(`title') `landscape'
 	
-	if ("`colabels'"!="") set_headers , headers(`headers') nummod(`nummodels')
+	if (`'"`colabels'"'!="") set_headers , headers(`colabels') nummod(`nummodels')
 	
 	// set border on bottom of header row of table
 	putdocx table esttable(1,.), border(bottom)
