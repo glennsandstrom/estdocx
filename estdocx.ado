@@ -18,7 +18,8 @@
 // * BUG: if factor has more than single digit level program throws error
 //
 // * BUG: Omitted variables are incorrectly displayed as (base)
-
+//
+// * BUG if option colable is out of range program throw error
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
@@ -303,12 +304,12 @@ program estdocx, rclass
 		[eform] ///
 		[fname(string)] 
 		
-		// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is of
+	// You need to captalize all options that start with no; otherwise Stata treats at as a optionally off eg. p is of
 
 	// set local holding the names of estimates to be reported in table
 	local estnames= "`namelist'" //space separated list of estimates
+	
 	//loop over estnames to and check that they are valid estimation result names avalaible in memory
-
 	qui estimates dir
 	local estimates= r(names)
 	foreach model in `estnames' {
@@ -321,6 +322,12 @@ program estdocx, rclass
 		exit _rc
 		}
 			
+	}
+	
+	local du : list dups estnames
+	if("`du'"!="") {
+		di as error "ERROR: Duplicate names of stored estimates provided to estodocx. Namelist of stored estimates must be unique"
+		error 197
 	}
 	
 	// set local holding list of allowed statistics
@@ -395,7 +402,6 @@ program estdocx, rclass
 		// names and factor levels in case var is a factor
 		local totcols= `nummodels' +1
 	
-**# Bookmark #1
 	create_table `estnames', pagesize(`pagesize') title(`title') `landscape'
 	
 	if (`'"`colabels'"'!="") set_headers , headers(`colabels') nummod(`nummodels')
