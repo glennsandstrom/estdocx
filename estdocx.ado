@@ -488,10 +488,18 @@ program estdocx, rclass
 	if("`star'"!="" & "`nopval'"=="") write_legend, star(`star') row(`r(nrows)') col(`r(ncols)')
 
 	/**************************************************************************/
-	/** Save worddocument if program is not in inline mode           **/
+	/** Store tabel info in r() if in inline mode else save to standalone file */
 	/**************************************************************************/
-	//putdocx describe esttable
-	if("`inline'"=="") putdocx save "`saving'", replace
+
+
+	if("`inline'"!="") {
+		qui putdocx describe esttable
+		return local tabname= "esttable"
+		return scalar tabrows= r(nrows)
+		return scalar tabcols= r(ncols)
+	}
+	else {
+		
 		// Save document to standalone file
 		capture noisily putdocx save "`saving'", replace 
 		if _rc!=0 {
@@ -510,6 +518,9 @@ program estdocx, rclass
 	/** Garbage collection             **/
 	/**************************************************************************/
 	//matrix drop _all
+	
+	
+
 end
 
 version 17
