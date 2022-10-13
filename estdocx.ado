@@ -15,8 +15,6 @@
 //
 // * BUG:if a variable has no valuelables program ends in Error st_vlmap():  3300  argument out of range
 // 
-// * Option keep does not work
-//
 // * BUG: if factor has more than single digit level program throws error
 //
 // * BUG: Omitted variables are incorrectly displayed as (base)
@@ -1081,6 +1079,7 @@ class estdocxtable {
 		void   set_keep()                // computes the uniq ordered list of levels that form the rows of table
 		
 		void   create_display()
+		`SS'   term_from_level()        // get the term from a provided level
 		`SS'   get_beta()
 		`SS'   get_pvalue()
 		`SS'   get_ci()
@@ -1140,10 +1139,7 @@ class estdocxtable {
 		this.keep= tokens(keep_txt)				
 		this.set_keep()
 		}
-		
-
-	
-		
+			
 	// run setup of parameter objects 
 	for (i=1; i<=length(this.levels); i++) {
 			par.setup(this.levels[i])
@@ -1207,7 +1203,7 @@ class estdocxtable {
 	of the regression table
 	****************************************************************************/
 	/***************************************************************************
-	Function sets the string vector levels contining pramters with base/omitted stripped
+	Function sets the string vector terms contining paramters with base/omitted stripped
 	****************************************************************************/
 	void estdocxtable::set_terms() {
 		real scalar r
@@ -1231,11 +1227,18 @@ class estdocxtable {
 	****************************************************************************/
 	void estdocxtable::set_keep() {
 		`RS' i, ii
-		`SCV' keeplevels
 		real colvector add
 		`SS' term
+
 		
-			//check that all all terms in keep exists in models
+		//0. Check that all provided terms actually exists in models and throw error if it does not
+		//1. for each term loop over the complete set of levels found in the the models
+		//2. Check if level matches to the specified term (level needs to be transformed to it term for matching)
+		//3. If it matches add it to vector storing indexvalues of the levels that we want in the table
+		//4. When all terms have been processed and the index for their levels stored in add replace this.levels with the 
+		//   restricted set.
+		
+			//0. Check that all all terms in keep exists in models
 			for (i=1; i<=length(this.keep); i++) {
 				
 				if(!anyof(this.terms, this.keep[i])) {
@@ -1245,23 +1248,39 @@ class estdocxtable {
 			}
 		
 		
-		//declare colvector this_unique => limited and ordered version of coiffcents returned
-		keeplevels= J(0, 1, "")
-	
-		//loop over terms to be keept
-		for (i=1; i<=length(this.keep); i++) {
+		//declare colvector add used to store indexes of levels to be included in the table
+	    add= J(0,1,.)
 		
-			add= J(0, 1, .)
-			for (ii=1; ii<=length(this.terms); ii++) {
-				if(this.terms[ii]==this.keep[i]) add= add\ii
+		//1. For each term provided in keep loop over all levels and add the level if it matches to term 
+		// stored in keep
+		for (i=1; i<=length(this.keep); i++) {
+			
+			// loop over all levels and store their index in vector add
+			for (ii=1; ii<=length(this.levels); ii++) {
+				// get term of the level
+				term= term_from_level(this.levels[ii])
+				// check if level matches to term provided in keep
+				if(term==this.keep[i]) add= add\ii
 				
 			}
-			
-		keeplevels	= keeplevels\this.levels[(add)]
-		}
 
-		this.levels= keeplevels
+		}
 		
+		// use list subscripting (subscipting with a vector) to select only the elements (add) of this.levels
+		// that matches the terms provided in this.keep
+		this.levels	= this.levels[(add)]
+		
+	}
+	/***************************************************************************
+	Function writes paramters for all estnames to display frame
+	****************************************************************************/
+	`SS' estdocxtable::term_from_level(string scalar level) {
+		 `SS' term
+		 term= level
+		 	// remove factor, base, omitted, nobase and continious charathers
+			while(regexm(term, "[0-9bocn]+\.")) term= regexr(term, "[0-9bocn]+\.", ".")
+			term= subinstr(term, ".", "")
+			return(term)
 	}
 	/***************************************************************************
 	Function writes paramters for all estnames to display frame
@@ -1437,6 +1456,8 @@ class estdocxtable {
 		printf("{txt}---------------------------------------------------------------------------\n")
 		"estnames" 
 		this.estnames
+		"keep"
+		this.keep
 		"levels"
 		this.levels
 		"terms"
