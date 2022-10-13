@@ -492,6 +492,19 @@ program estdocx, rclass
 	/**************************************************************************/
 	//putdocx describe esttable
 	if("`inline'"=="") putdocx save "`saving'", replace
+		// Save document to standalone file
+		capture noisily putdocx save "`saving'", replace 
+		if _rc!=0 {
+				display as error "Unable to save `saving'"
+				display as error "Make sure you do not have a worddocument with the same filename open (i.e. `saving')"
+				display as error "If a document with the same name is open this will prohibit Stata to save the file to disc."
+				display as error "If that is the case close the Wordfile and run program again."
+				exit _rc
+		}
+			
+		
+		
+	}	
 	
 	/**************************************************************************/
 	/** Garbage collection             **/
