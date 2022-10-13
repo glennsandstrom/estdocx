@@ -195,12 +195,11 @@
 			foreach mod in `models' {
 				if ("`stat'"!="N") {
 					local text: display %-12.1f S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
-					local text= subinstr("`text'"," ","", .)
 				}
 				else {
 					local text: display %-12.0gc  S[rownumb(S,"`stat'"),colnumb(S,"`mod'")]
 				}
-				putdocx table esttable(`row',`col') = ("`text'"), font(Garamond, 11) halign(left)			
+				putdocx table esttable(`row',`col') = (strtrim("`text'")), font(Garamond, 11) halign(left)			
 				local ++col
 			}
 		}		
@@ -450,11 +449,11 @@ program estdocx, rclass
 				local ++rowMSWord
 				putdocx table esttable(`rowMSWord',1) = ("`vlab'"), italic font(Garamond, 10) halign(center)
 				
-				//loop over columns of frame and set cell values of table for continious
+				//loop over columns of frame and set cell values of table for factor
 				forvalues col=2/`totcols' {
 					local estnum= `col'-1
 					local estname: word `estnum' of `estnames'
-					putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), font(Garamond, 10) halign(left)		
+					putdocx table esttable(`rowMSWord',`col') = (strtrim(`estname'[`rowframe'])), font(Garamond, 10) halign(left)		
 					}
 				
 			
@@ -468,7 +467,7 @@ program estdocx, rclass
 			forvalues col=2/`totcols' {
 				local estnum= `col'-1
 				local estname: word `estnum' of `estnames'
-				putdocx table esttable(`rowMSWord',`col') = (`estname'[`rowframe']), ///
+				putdocx table esttable(`rowMSWord',`col') = (strtrim(`estname'[`rowframe'])), ///
 				font(Garamond, 10) halign(left)
 				}
 		}
