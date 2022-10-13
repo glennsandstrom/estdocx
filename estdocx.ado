@@ -14,12 +14,12 @@
 //
 //
 // * BUG:if a variable has no valuelables program ends in Error st_vlmap():  3300  argument out of range
-
+// 
+// * Option keep does not work
+//
 // * BUG: if factor has more than single digit level program throws error
 //
 // * BUG: Omitted variables are incorrectly displayed as (base)
-//
-// * BUG if option colable is out of range program throw error
 //
 // * Implement additonal signs for significanse with dagger mark as e.g. style
 //   in Demography.
@@ -60,9 +60,10 @@
 			if "`landscape'"!="" putdocx begin, pagesize(`pagesize') landscape
 			else putdocx begin, pagesize(`pagesize')
 			
+			
+			
 	end
 	/*########################################################################*/
-**# Bookmark #2
 	program create_table
 		version 17
 		syntax namelist(name=models), pagesize(string) [title(string)] [landscape]
@@ -75,8 +76,8 @@
 		// names and factor levels in case var is a factor
 		local COLUMNS= `nummodels' +1
 		
-		// try to insert a pragraph
-		capture putdocx paragraph, halign(left) spacing(after, 0) 
+		// check tht there is an active document in memory
+		capture putdocx describe
 		if _rc!=0 {
 				display as error "No active document in memory. "
 				display as error "If you are using the option inline "
@@ -86,8 +87,14 @@
 		}
 			
 		//print title of table it there is one
-		if ("`title'"!="") putdocx text ("`title'"), bold
-
+		if ("`title'"!="") {
+				// try insering title, will throw error if there is no active paragraph
+				capture putdocx text ("`title'"), bold
+				if _rc!=0 {
+					putdocx paragraph, halign(left) spacing(after, 0)
+					putdocx text ("`title'"), bold
+				}
+		}
 		/**************************************************************************/
 		/** CREATE THE HEADER ROW TABLE USING `ROWS',`COLUMNS' DIMENSIONS        **/
 		/**************************************************************************/
