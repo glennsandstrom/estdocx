@@ -1,6 +1,6 @@
 {smcl}
-{* *! version 0.96 20220617 }{...}
-{right:version 0.963}
+{* *! version 0.97 20221013 }{...}
+{right:version 0.97}
 {title:Title}
 {phang}
 {bf:estdocx} {hline 2} a command giving same functionality as estimates table 
@@ -26,7 +26,7 @@ namelist
 {synopt:{opt bfmt(%fmt)}}Stata format used for coefficients. Default is %9.2f{p_end}
 {synopt:{opt star(numlist)}}Numlist of significance levels. If option is omitted significance is reported numerically.{p_end}
 {synopt:{opt nop}}Do not report significance levels.{p_end}
-{synopt:{opt ci(%fmt)}}Stata format used for 95% confidence intervals. If option is omitted no CIs are not reported. {p_end}
+{synopt:{opt ci(%fmt)}}Stata format used for 95% confidence intervals. If option is omitted no CIs are reported. {p_end}
 {synopt:{opt stats(scalarlist)}}Report scalarlist in table. Allowed is N aic bic {p_end}
 {synopt:{opt baselevels}}Include all baselevels.{p_end}
 {synopt:{opt keep(coflist)}}List of coefficient to include in table.{p_end}

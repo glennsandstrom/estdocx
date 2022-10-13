@@ -1,10 +1,22 @@
-# estdocx v. 0.963
+# estdocx v. 0.97
 Program to produce publication ready regression tables in MS Word from stored estimates in the same fashion as the command:
 ```stata
 estimates table
 ```
 in Stata.
-See help file for examples of how tho use the program.
+
+Already in version 15 of Stata the command putdocx provided a native implementation for exporting estimates 
+trough the command docx table results = etable.
+
+However, using etable directly after estimates store causes unwanted formatting issues in the resulting table. E.g. hidden characters in cells
+making formating of the table in MSWord difficult. This implementation avoid such issues and allows some
+additional benefits by providing options for the formating of the resulting table, automatic inclusion of
+legend etc.
+
+Since Stata version 17 the same kind of results can be achived with the collect suite of commands but estdocx provides a much simpler boxed alternative without the rather complicated
+syntax and logic that comes with using collect.
+
+See help file for examples of how to use the program.
 
 Example of output in MS Word format
 ===================================
@@ -58,9 +70,7 @@ Options           | Description
 saving(filename)  | Path/filename of the generated docx file.
 inline            | Add table to a docx in memory rather than saving to standalone file.
 title(string)     | Optional title for table.
-colabels(string)  | Optional labels for columns. Supply list of column number # "label"... Default is to
-        label models/columns using the names of the stored estimates used to form the table.
-
+colabels(string)  | Optional labels for columns. Supply list of column number # "label"... Default is to label models/columns using the names of the stored estimates used to form the table.
 bfmt(%fmt)        | Stata format used for coefficients. Default is %9.2f
 star(numlist)     | Numlist of significance levels. If option is omitted significance is reported numerically.
 nopval            | Do not report significance levels.

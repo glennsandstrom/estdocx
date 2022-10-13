@@ -1,15 +1,19 @@
-v 0.963
+v 0.97
 * lines starting with * are comments; they are ignored
 * blank lines are ignored, too
 * v indicates version—specify v 3, which is the current version of .toc files
 * d lines display description text
 * the first d line is the title, and the remaining ones are text
 * blank d lines display a blank line
-d 'estdocx': Although the command putdocx in Stata 15 provide a native implementation for exporting estimates
+d 'estdocx': Already in version 15 of Stata the command putdocx provided a native implementation for exporting estimates
 d trough the command docx table results = etable.
+d
 d However, using etable directly after estimates store causes unwanted formatting issues in the resulting table. E.g. hidden characters in cells
 d making formating of the table in MSWord difficult. This implementation avoid such issues and allows some
 d additional benefits by providing options for the formating of the resulting table, automatic inclusion of
 d legend etc.
+d
+d Since Stata version 17 the same kind of results can be achived with the collect suite of commands but estdocx provides a much simpler boxed alternative without the rather complicated
+d syntax and logic that comes with using collect.
 * p lines display packages
 p estdocx
